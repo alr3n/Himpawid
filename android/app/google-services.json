@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "285739978637",
+    "project_id": "himpawid-z3so4d",
+    "storage_bucket": "himpawid-z3so4d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285739978637:android:8613c5d31dbb96380ff7c4",
+        "android_client_info": {
+          "package_name": "com.mycompany.himpawid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "285739978637-opkh6t0uagg4mv4o2p2ivfioeo0dib67.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.himpawid",
+            "certificate_hash": "9bbb3186b2189ef16d8f272bdab59362c395cbb4"
+          }
+        },
+        {
+          "client_id": "285739978637-md9si6arp4nih31f07011vnt67vbh7qb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXtUds7Nk0rOIws6lIyfsFnbA0MgSSgmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "285739978637-md9si6arp4nih31f07011vnt67vbh7qb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "285739978637-c95eaeq7gjn7q4m0afbanmbvlrknbhc8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mycompany.himpawid"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
