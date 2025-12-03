@@ -1,15 +1,49 @@
-2025/12/02-21:01:15.493 3b70 Reusing MANIFEST C:\Users\ADMINI~1\AppData\Local\Temp\flutter_tools.45fbcf6e\flutter_tools_chrome_device.8f9e09c6\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2025/12/02-21:01:15.495 3b70 Recovering log #19
-2025/12/02-21:01:15.496 3b70 Reusing old log C:\Users\ADMINI~1\AppData\Local\Temp\flutter_tools.45fbcf6e\flutter_tools_chrome_device.8f9e09c6\Default\EdgeCoupons/coupons_data.db/000019.log 
-2025/12/02-21:01:15.521 3b70 Delete type=0 #4
-2025/12/02-21:01:15.522 3b70 Delete type=0 #7
-2025/12/02-21:01:15.523 3b70 Delete type=2 #8
-2025/12/02-21:01:15.526 3b70 Delete type=0 #10
-2025/12/02-21:01:15.526 3b70 Delete type=2 #11
-2025/12/02-21:01:15.526 3b70 Delete type=0 #13
-2025/12/02-21:01:15.527 3b70 Delete type=2 #14
-2025/12/02-21:01:15.527 3b70 Delete type=0 #16
-2025/12/02-21:01:15.529 3b70 Delete type=2 #17
-2025/12/02-21:01:46.682 37f4 Level-0 table #24: started
-2025/12/02-21:01:46.689 37f4 Level-0 table #24: 672792 bytes OK
-2025/12/02-21:01:46.692 37f4 Delete type=0 #19
+2025/12/03-23:18:34.267 794 Reusing MANIFEST C:\Users\ADMINI~1\AppData\Local\Temp\flutter_tools.7fabb7cb\flutter_tools_chrome_device.d760771a\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2025/12/03-23:18:34.276 794 Recovering log #78
+2025/12/03-23:18:34.280 794 Reusing old log C:\Users\ADMINI~1\AppData\Local\Temp\flutter_tools.7fabb7cb\flutter_tools_chrome_device.d760771a\Default\EdgeCoupons/coupons_data.db/000078.log 
+2025/12/03-23:18:34.286 794 Delete type=0 #4
+2025/12/03-23:18:34.287 794 Delete type=0 #7
+2025/12/03-23:18:34.287 794 Delete type=2 #8
+2025/12/03-23:18:34.287 794 Delete type=0 #10
+2025/12/03-23:18:34.288 794 Delete type=2 #11
+2025/12/03-23:18:34.288 794 Delete type=0 #13
+2025/12/03-23:18:34.288 794 Delete type=2 #14
+2025/12/03-23:18:34.298 794 Delete type=0 #16
+2025/12/03-23:18:34.302 794 Delete type=2 #17
+2025/12/03-23:18:34.303 794 Delete type=0 #19
+2025/12/03-23:18:34.327 794 Delete type=2 #21
+2025/12/03-23:18:34.328 794 Delete type=0 #23
+2025/12/03-23:18:34.329 794 Delete type=2 #24
+2025/12/03-23:18:34.329 794 Delete type=0 #26
+2025/12/03-23:18:34.330 794 Delete type=2 #27
+2025/12/03-23:18:34.330 794 Delete type=0 #29
+2025/12/03-23:18:34.343 794 Delete type=2 #30
+2025/12/03-23:18:34.344 794 Delete type=0 #32
+2025/12/03-23:18:34.344 794 Delete type=2 #34
+2025/12/03-23:18:34.376 794 Delete type=0 #36
+2025/12/03-23:18:34.390 794 Delete type=2 #37
+2025/12/03-23:18:34.390 794 Delete type=0 #39
+2025/12/03-23:18:34.406 794 Delete type=2 #40
+2025/12/03-23:18:34.408 794 Delete type=0 #42
+2025/12/03-23:18:34.408 794 Delete type=2 #43
+2025/12/03-23:18:34.421 794 Delete type=0 #45
+2025/12/03-23:18:34.421 794 Delete type=2 #47
+2025/12/03-23:18:34.422 794 Delete type=0 #49
+2025/12/03-23:18:34.439 794 Delete type=2 #50
+2025/12/03-23:18:34.455 794 Delete type=0 #52
+2025/12/03-23:18:34.456 794 Delete type=2 #53
+2025/12/03-23:18:34.458 794 Delete type=0 #55
+2025/12/03-23:18:34.459 794 Delete type=2 #56
+2025/12/03-23:18:34.460 794 Delete type=0 #58
+2025/12/03-23:18:34.461 794 Delete type=2 #60
+2025/12/03-23:18:34.462 794 Delete type=0 #62
+2025/12/03-23:18:34.463 794 Delete type=2 #63
+2025/12/03-23:18:34.464 794 Delete type=0 #65
+2025/12/03-23:18:34.464 794 Delete type=2 #66
+2025/12/03-23:18:34.465 794 Delete type=0 #68
+2025/12/03-23:18:34.466 794 Delete type=2 #69
+2025/12/03-23:18:34.479 794 Delete type=0 #71
+2025/12/03-23:18:34.481 794 Delete type=0 #75
+2025/12/03-23:21:19.374 a4c Level-0 table #82: started
+2025/12/03-23:21:19.383 a4c Level-0 table #82: 672796 bytes OK
+2025/12/03-23:21:19.387 a4c Delete type=0 #78

@@ -92,7 +92,7 @@ Future<void> getLocationAndAirQuality() async {
 
   // Then get air quality data (only if we have coordinates)
   if (FFAppState().latitude != 0.0 && FFAppState().longitude != 0.0) {
-    final String aqiApiKey = 'YOUR_OPENWEATHER_API_KEY'; // Replace with actual OpenWeather API key
+    final String aqiApiKey = 'e305a2a09e3309305b986b90db6cd155';
     final double lat = FFAppState().latitude;
     final double lon = FFAppState().longitude;
 
@@ -104,68 +104,48 @@ Future<void> getLocationAndAirQuality() async {
         final Map<String, dynamic> data = json.decode(response.body);
 
         if (data['list'] != null && data['list'].isNotEmpty) {
-          final airQualityData = data['list'][0];
-          final components = airQualityData['components'] ?? {};
-          final main = airQualityData['main'] ?? {};
+          final airData = data['list'][0];
+          final int apiAqi = airData['main']['aqi'];
 
-          // Get AQI value (OpenWeather uses 1-5 scale, convert to 0-500 scale approximately)
-          final aqiRaw = main['aqi'] ?? 1;
-          int aqi = 0;
-          switch (aqiRaw) {
+          // Convert OpenWeatherMap AQI (1-5) to US EPA scale representative values
+          int aqi;
+          String aqiCategoryLabel;
+          Color gaugeColor;
+          switch (apiAqi) {
             case 1:
-              aqi = 25; // Good
+              aqi = 25;
+              aqiCategoryLabel = 'Good';
+              gaugeColor = Color(0xFF00E400); // Green
               break;
             case 2:
-              aqi = 75; // Fair
+              aqi = 75;
+              aqiCategoryLabel = 'Moderate';
+              gaugeColor = Color(0xFFFFFF00); // Yellow
               break;
             case 3:
-              aqi = 125; // Moderate
+              aqi = 125;
+              aqiCategoryLabel = 'Sensitive ';
+              gaugeColor = Color(0xFFFF7E00); // Orange
               break;
             case 4:
-              aqi = 175; // Poor
+              aqi = 175;
+              aqiCategoryLabel = 'Unhealthy';
+              gaugeColor = Color(0xFFFF0000); // Red
               break;
             case 5:
-              aqi = 250; // Very Poor
+              aqi = 250;
+              aqiCategoryLabel = 'Very Unhealthy';
+              gaugeColor = Color(0xFF8F3F97); // Purple
               break;
             default:
               aqi = 0;
-          }
-
-          // Determine AQI category based on value
-          String aqiCategoryLabel = 'Unknown';
-          if (aqi <= 50) {
-            aqiCategoryLabel = 'Good';
-          } else if (aqi <= 100) {
-            aqiCategoryLabel = 'Moderate';
-          } else if (aqi <= 150) {
-            aqiCategoryLabel = 'Unhealthy for Sensitive Groups';
-          } else if (aqi <= 200) {
-            aqiCategoryLabel = 'Unhealthy';
-          } else if (aqi <= 300) {
-            aqiCategoryLabel = 'Very Unhealthy';
-          } else {
-            aqiCategoryLabel = 'Hazardous';
+              aqiCategoryLabel = 'Unknown';
+              gaugeColor = Color(0xFF1B998B);
           }
 
           // Calculate gauge progress: aqi / 500
           int gaugeProgress = ((aqi / 500) * 100).round();
           int remaining = 100 - gaugeProgress;
-
-          // Determine gauge color based on AQI
-          Color gaugeColor;
-          if (aqi <= 50) {
-            gaugeColor = Color(0xFF00E400); // Green for Good
-          } else if (aqi <= 100) {
-            gaugeColor = Color(0xFFFFFF00); // Yellow for Moderate
-          } else if (aqi <= 150) {
-            gaugeColor = Color(0xFFFF7E00); // Orange for Unhealthy for Sensitive Groups
-          } else if (aqi <= 200) {
-            gaugeColor = Color(0xFFFF0000); // Red for Unhealthy
-          } else if (aqi <= 300) {
-            gaugeColor = Color(0xFF8F3F97); // Purple for Very Unhealthy
-          } else {
-            gaugeColor = Color(0xFF7E0023); // Maroon for Hazardous
-          }
 
           // Update app state with air quality data
           FFAppState().update(() {
@@ -176,74 +156,32 @@ Future<void> getLocationAndAirQuality() async {
             FFAppState().gaugeColor = gaugeColor;
           });
 
-          // Parse pollutants data from components
+          // Parse pollutants data from OpenWeatherMap API
+          final components = airData['components'];
+          Map<String, String> pollutantsMap = {};
+
+          pollutantsMap['CO'] = components['co'].toString();
+          pollutantsMap['NO'] = components['no'].toString();
+          pollutantsMap['NO2'] = components['no2'].toString();
+          pollutantsMap['O3'] = components['o3'].toString();
+          pollutantsMap['SO2'] = components['so2'].toString();
+          pollutantsMap['PM2_5'] = components['pm2_5'].toString();
+          pollutantsMap['PM10'] = components['pm10'].toString();
+          pollutantsMap['NH3'] = components['nh3'].toString();
+          pollutantsMap['AQI'] = aqi.toString();
+
           FFAppState().update(() {
-            FFAppState().pollutants = {
-              'AQI': aqi.toDouble(),
-              'CO': components['co']?.toDouble() ?? 0.0,
-              'NO': components['no']?.toDouble() ?? 0.0,
-              'NO2': components['no2']?.toDouble() ?? 0.0,
-              'O3': components['o3']?.toDouble() ?? 0.0,
-              'SO2': components['so2']?.toDouble() ?? 0.0,
-              'PM2_5': components['pm2_5']?.toDouble() ?? 0.0,
-              'PM10': components['pm10']?.toDouble() ?? 0.0,
-              'NH3': components['nh3']?.toDouble() ?? 0.0,
-            };
-            // Set individual pollutant values
-            FFAppState().coValue = components['co']?.toDouble() ?? 0.0;
-            FFAppState().noValue = components['no']?.toDouble() ?? 0.0;
-            FFAppState().no2Value = components['no2']?.toDouble() ?? 0.0;
-            FFAppState().o3Value = components['o3']?.toDouble() ?? 0.0;
-            FFAppState().so2Value = components['so2']?.toDouble() ?? 0.0;
-            FFAppState().pm25Value = components['pm2_5']?.toDouble() ?? 0.0;
-            FFAppState().pm10Value = components['pm10']?.toDouble() ?? 0.0;
-            FFAppState().nh3Value = components['nh3']?.toDouble() ?? 0.0;
+            FFAppState().pollutants = pollutantsMap;
           });
 
           // Generate and save notification
           await generateNotification();
         }
       } else {
-        // API call failed, use mock data for demonstration
-        int mockAqi = 45; // Example: Good air quality
-        String mockCategory = 'Good';
-        int gaugeProgress = ((mockAqi / 500) * 100).round();
-        int remaining = 100 - gaugeProgress;
-        Color gaugeColor = Color(0xFF00E400); // Green
-
-        FFAppState().update(() {
-          FFAppState().aqiValue = mockAqi;
-          FFAppState().aqiCategory = 'Air Quality Index';
-          FFAppState().healthRisk = mockCategory;
-          FFAppState().percentages = [gaugeProgress, remaining];
-          FFAppState().gaugeColor = gaugeColor;
-        });
-
-        // Mock pollutants data
-        FFAppState().update(() {
-          FFAppState().pollutants = {
-            'AQI': mockAqi.toDouble(),
-            'CO': 300.0,
-            'NO': 5.0,
-            'NO2': 15.0,
-            'O3': 25.0,
-            'SO2': 8.0,
-            'PM2_5': 12.0,
-            'PM10': 20.0,
-            'NH3': 2.0,
-          };
-          FFAppState().coValue = 300.0;
-          FFAppState().noValue = 5.0;
-          FFAppState().no2Value = 15.0;
-          FFAppState().o3Value = 25.0;
-          FFAppState().so2Value = 8.0;
-          FFAppState().pm25Value = 12.0;
-          FFAppState().pm10Value = 20.0;
-          FFAppState().nh3Value = 2.0;
-        });
+       
       }
     } catch (e) {
-      // Handle error
+      
     }
   }
 

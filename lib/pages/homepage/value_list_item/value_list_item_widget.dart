@@ -131,7 +131,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['NO2']?.toString() ?? '0',
+                                        FFAppState().pollutants['NO2']?.toString() ?? '',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -222,7 +222,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['CO']?.toString() ?? '0',
+                                        FFAppState().pollutants['CO'] ?? 'N/A',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -325,7 +325,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['PM10']?.toString() ?? '0',
+                                        FFAppState().pollutants['PM10'] ?? '',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -416,7 +416,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['NO']?.toString() ?? '0',
+                                        FFAppState().pollutants['NO'] ?? 'N/A',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -519,7 +519,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['O3']?.toString() ?? '0',
+                                        FFAppState().pollutants['O3']?.toString() ?? '',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -610,7 +610,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['SO2']?.toString() ?? '0',
+                                        FFAppState().pollutants['SO2'] ?? 'N/A',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -713,7 +713,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['PM2_5']?.toString() ?? '0',
+                                        FFAppState().pollutants['PM2_5']?.toString() ?? '',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
@@ -804,7 +804,7 @@ class _ValueListItemWidgetState extends State<ValueListItemWidget> {
                                       padding: EdgeInsetsDirectional.fromSTEB(
                                           0.0, 0.0, 0.0, 5.0),
                                       child: Text(
-                                        FFAppState().pollutants['AQI']?.toString() ?? '0',
+                                        FFAppState().pollutants['AQI'] ?? 'N/A',
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(

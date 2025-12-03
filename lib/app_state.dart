@@ -262,13 +262,13 @@ class FFAppState extends ChangeNotifier {
     _currentDateTime = value;
   }
 
-  Map<String, double> _pollutants = {};
-  Map<String, double> get pollutants => _pollutants;
-  set pollutants(Map<String, double> value) {
+  Map<String, String> _pollutants = {};
+  Map<String, String> get pollutants => _pollutants;
+  set pollutants(Map<String, String> value) {
     _pollutants = value;
   }
 
-  void addToPollutants(String key, double value) {
+  void addToPollutants(String key, String value) {
     pollutants[key] = value;
   }
 

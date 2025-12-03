@@ -409,8 +409,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                           alignment:
                                               AlignmentDirectional(0.0, 0.0),
                                           child: Container(
-                                            width: MediaQuery.sizeOf(context).width * 0.6,
-                                            height: MediaQuery.sizeOf(context).width * 0.6,
+                                            width: MediaQuery.sizeOf(context).width * 0.65,
+                                            height: MediaQuery.sizeOf(context).width * 0.65,
                                             decoration: BoxDecoration(
                                               color:
                                                   FlutterFlowTheme.of(context)
@@ -435,8 +435,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                           alignment:
                                               AlignmentDirectional(0.0, 0.0),
                                           child: Container(
-                                            width: MediaQuery.sizeOf(context).width * 0.75,
-                                            height: MediaQuery.sizeOf(context).width * 0.75,
+                                            width: MediaQuery.sizeOf(context).width * 0.8,
+                                            height: MediaQuery.sizeOf(context).width * 0.8,
                                             child: FlutterFlowPieChart(
                                               data: FFPieChartData(
                                                 values:
@@ -498,7 +498,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                 child: Padding(
                                                   padding: EdgeInsetsDirectional
                                                       .fromSTEB(
-                                                          0.0, 80.0, 0.0, 0.0),
+                                                          0.0, 60.0, 0.0, 0.0),
                                                   child: Text(
                                                     'Air Quality Index',
                                                     style: FlutterFlowTheme.of(
@@ -518,7 +518,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                           color: FlutterFlowTheme
                                                                   .of(context)
                                                               .secondaryText,
-                                                          fontSize: 12.0,
+                                                          fontSize: 16.0 * (MediaQuery.sizeOf(context).width < 400 ? MediaQuery.sizeOf(context).width / 400 : 1.0),
                                                           letterSpacing: 0.0,
                                                           fontWeight:
                                                               FontWeight.w600,
@@ -557,7 +557,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                     .displayLarge
                                                                     .fontStyle,
                                                           ),
-                                                          fontSize: 64.0,
+                                                          fontSize: 72.0 * (MediaQuery.sizeOf(context).width < 400 ? MediaQuery.sizeOf(context).width / 400 : 1.0),
                                                           letterSpacing: 0.0,
                                                           fontWeight:
                                                               FlutterFlowTheme.of(

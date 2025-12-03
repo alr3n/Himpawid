@@ -1,0 +1,248 @@
+{
+   "checksum": "83515ced26ffc1cc0d8720ba4f2bb75c",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13271430318140254",
+            "date_last_used": "0",
+            "guid": "94e533a1-17b1-4f5f-a25b-59175f316125",
+            "id": "8",
+            "name": "Course | CS50's Web Programming with Python and JavaScript | edX",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://learning.edx.org/course/course-v1:HarvardX+CS50W+Web/home",
+            "visit_count": 0
+         }, {
+            "date_added": "13280123175029586",
+            "date_last_used": "13409155457157377",
+            "guid": "30f4f1c9-ff5d-4bb8-9ff0-0b4e9a180f76",
+            "id": "9",
+            "name": "Scribd",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.scribd.com/embeds/489189108/content?start_page=1&view_mode=scroll&access_key=key-fFexxf7r1bzWu3HKwf",
+            "visit_count": 1
+         }, {
+            "children": [ {
+               "date_added": "13257922012914662",
+               "date_last_used": "0",
+               "guid": "d65e5339-4f83-4f24-ad16-041b201ce5ee",
+               "id": "11",
+               "name": "Acer",
+               "show_icon": false,
+               "source": "sync",
+               "type": "url",
+               "url": "http://www.acer.com/",
+               "visit_count": 0
+            } ],
+            "date_added": "13289206475642445",
+            "date_last_used": "0",
+            "date_modified": "13289206475642445",
+            "guid": "e3cbf713-a073-448b-9873-9dcc485040dd",
+            "id": "10",
+            "name": "Acer",
+            "source": "unknown",
+            "type": "folder"
+         }, {
+            "date_added": "13312908607436949",
+            "date_last_used": "0",
+            "guid": "e4886e8a-f82d-40d9-b839-305ce57a83bf",
+            "id": "12",
+            "name": "Star patterns in C programming - Codeforwin",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://codeforwin.org/2015/07/star-patterns-program-in-c.html",
+            "visit_count": 0
+         }, {
+            "date_added": "13312973499062368",
+            "date_last_used": "13408855648738089",
+            "guid": "d2d4e024-e1ad-4c1a-b552-3e2a79d8af07",
+            "id": "13",
+            "name": "What if it’s not about me? (Ephesians 1:4–6a) - Forget the Channel",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.lionelwindsor.net/2019/02/12/ephesians-1-4-6a/",
+            "visit_count": 1
+         }, {
+            "date_added": "13313022565403937",
+            "date_last_used": "0",
+            "guid": "46d3d104-d769-4de0-925c-1531e1036b81",
+            "id": "14",
+            "name": "9. Chemistry of the Atmosphere - THOMAS TALLIS SCIENCE",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://sciencetallis.weebly.com/9-chemistry-of-the-atmosphere.html",
+            "visit_count": 0
+         }, {
+            "date_added": "13314633861052581",
+            "date_last_used": "0",
+            "guid": "c60cd298-2372-4d35-8505-30a480caef87",
+            "id": "15",
+            "name": "Online C Compiler",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.programiz.com/c-programming/online-compiler/",
+            "visit_count": 0
+         }, {
+            "date_added": "13292320270712818",
+            "date_last_used": "0",
+            "guid": "4d085027-783a-45b1-9568-11f9db90c345",
+            "id": "16",
+            "name": "Gmail",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://accounts.google.com/b/0/AddMailService",
+            "visit_count": 0
+         }, {
+            "date_added": "13292320270714205",
+            "date_last_used": "0",
+            "guid": "bb30ea35-c9c8-4730-8aad-97a7904e2085",
+            "id": "17",
+            "name": "YouTube",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://youtube.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13292320270714846",
+            "date_last_used": "0",
+            "guid": "4e4f9bf3-db47-4d20-bb82-36a479dcdafd",
+            "id": "18",
+            "name": "Maps",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://maps.google.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13298220596951986",
+            "date_last_used": "0",
+            "guid": "3d8a3c9c-f778-423a-bf36-ef65e716b8f5",
+            "id": "19",
+            "name": "math rev.",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.scribd.com/embeds/230772486/content?start_page=1&view_mode=scroll&access_key=key-fFexxf7r1bzWu3HKwf",
+            "visit_count": 0
+         }, {
+            "date_added": "13298220614638405",
+            "date_last_used": "0",
+            "guid": "324f1886-7ac1-4694-80f2-89397a74de76",
+            "id": "20",
+            "name": "science rev.",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.scribd.com/embeds/230772477/content?start_page=1&view_mode=scroll&access_key=key-fFexxf7r1bzWu3HKwf",
+            "visit_count": 0
+         }, {
+            "date_added": "13300551171720869",
+            "date_last_used": "0",
+            "guid": "117aad1f-dd15-41b8-b486-8518560ae764",
+            "id": "21",
+            "name": "Coursera | Online Courses & Credentials From Top Educators. Join for Free",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.coursera.org/home",
+            "visit_count": 0
+         }, {
+            "date_added": "13331832588856491",
+            "date_last_used": "0",
+            "guid": "926d3661-44ee-4997-aefc-7f43ed533ef1",
+            "id": "22",
+            "name": "Tinkercad | Circuits",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.tinkercad.com/circuits",
+            "visit_count": 0
+         }, {
+            "date_added": "13333654708237803",
+            "date_last_used": "0",
+            "guid": "04ba6c26-88e4-41e5-a555-718d2b202451",
+            "id": "23",
+            "name": "EE 214 Engineering data analysis - Subject: EE 214 ENGINEERING DATA ANALYSIS (Week 2-3) Chapter 1: - Studocu",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.studocu.com/ph/document/isabela-state-university/bachelor-of-science-in-civil-engineering/ee-214-engineering-data-analysis/20865559",
+            "visit_count": 0
+         }, {
+            "date_added": "13333655351939278",
+            "date_last_used": "0",
+            "guid": "92f48e1b-b99c-44fc-bf19-61c0cf6961de",
+            "id": "24",
+            "name": "Engineering Data Analysis",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.scribd.com/embeds/410929053/content?start_page=1&view_mode=scroll&access_key=key-fFexxf7r1bzEfWu3HKwf",
+            "visit_count": 0
+         } ],
+         "date_added": "13409151115518188",
+         "date_last_used": "0",
+         "date_modified": "13333655351939278",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Favorites bar",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13409151115518188",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [ {
+            "date_added": "13310631840363656",
+            "date_last_used": "0",
+            "guid": "a550567a-1529-4dba-b2ed-bb1d6c560429",
+            "id": "6",
+            "name": "Work Hours Calculator",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.calculatorsoup.com/calculators/time/work-hours-calculator.php",
+            "visit_count": 0
+         }, {
+            "date_added": "13317497839907345",
+            "date_last_used": "0",
+            "guid": "c0e23489-91d1-4ad4-a2fa-5ae73ba2bb69",
+            "id": "7",
+            "name": "6 in 1 Magnetic Polarized Lense – monsterlaboratoriy",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://monsterlaboratoriy.myshopify.com/products/6-in-1-magnetic-polarized-lense?external_browser_redirect=true&fbclid=PAAaYm-vVk96byLWAdal3TMwhPJD1E3oJ2UN8nX4InY3FNcaKJgNaeSqPctlQ",
+            "visit_count": 0
+         } ],
+         "date_added": "13409151115518188",
+         "date_last_used": "0",
+         "date_modified": "13317497839907345",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile favorites",
+         "source": "unknown",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CjEKDgiIgQISCG2XMd+aAQAAEgAqGEtWZW1QTXRFbklUS0RiM0NSMCtxd3c9PUgDoAYMEo4BCAMSiQEKHG5qZ0R1ODhlQ3J2WHA4NnBEN2ZIR2NxRnA4OD0SJDJhOGQzY2MxLWFmYjMtNTgzNi1hYzk4LWFiNmEyZTc4MWNlZBgAIAAoADDdpqfcsDA4ztHhqukvQM7R4arpL0oceXpOQjAxY241NEE3Y1JVMHVUKy9QZ21UdFVvPVoAZQAAAADCPgJgABKuAQgXEqkBChwwUkZtTFk3RGJMemZ4YUtkMzIzQjhhUFdlazA9EiQwNGJhNmMyNi04OGU0LTQxZTUtYTU1NS03MThkMmIyMDI0NTEYACAAKAAwz5v2osExOMGh9qLBMUDBofaiwTFKHEF5alpuZExHYThYVkpWeW4yTTg0c1JtRnludz1aICIe//pNWnROUjRXZHl4ZU9aVEE1OFEyR2JkWGVJUk09ZUO5whDCPgJgBRKtAQgNEqgBChxYUXpsTExrZC9rdjhVWTMyT1d0SmdRRTIyejQ9EiRkMmQ0ZTAyNC1lMWFkLTRjMWEtYjU1Mi0zZTJhNzlkOGFmMDcYACAAKAAw8Jb26qwzOPHGjbHQMEDxxo2x0DBKHFNib3ladG5ST2h3WitTZzZaMlpPZEdMVURMaz1aHyId9kFRa1Q1eGxZNkdCVVovaWN1M2UrL0VtOWUvOD1lZTqiTcI+AmAFEq4BCBMSqQEKHHlqRmN6V2RlQ0JJV29GRHI1K2ZQQWRsY280VT0SJDNkOGEzYzljLWY3NzgtNDIzYS1iZjM2LWVmNjVlNzE2YjhmNRgAIAAoADD1xIShxTE4h6P2osExQIej9qLBMUocR2ViZUQxUWZRb1FxWXNJZ3RYcitjSFhCZFZNPVogIh7/qEdmWDJpY3h1clY2OUxIMjFpTENhMnZBdFVTaz1ltUXtwcI+AmAFEqwBCAYSpwEKHDE0eVJpVHR1eEduTHhiUnFTSURWbkRuTDVSRT0SJGE1NTA1NjdhLTE1MjktNGRiYS1iMmVkLWJiMWQ2YzU2MDQyORgAIAAoADDTm/aiwTE4yKL2osExQMii9qLBMUocTEk4Y1Q5ZGZuNHpUam9vdS9iMG16bW16N0hzPVoeIhxicUJna1l0dk1RcHc4WmFwK0o5Ym1tU1Y5Mmc9ZawPNZbCPgJgBRKtAQgREqgBChxzZFZtK2JGaUpQQmZUTGgzTVpHcHlodmhCVTg9EiRiYjMwZWEzNS1jOWM4LTQ3MzAtOGFhZC05N2E3OTA0ZTIwODUYACAAKAAw0Jv2osExOOKh9qLBMUDiofaiwTFKHGM4UCtIc0Y1L2V5eFVzMjZ2TU5Ldk5CTmJvZz1aHyId/0NQb3FTQ2E2TjBlM0dZVDhsU3FTZEJjSVVlND1lOPk5M8I+AmAFEqwBCAcSpwEKHFhRVnJFYlltVmRXN3Q5NHd2SzNIcG44WEtJZz0SJGMwZTIzNDg5LTkxZDEtNGFkNC1hMmZhLTVhZTczYmEyYmI2ORgAIAAoADDWm/aiwTE4tqP2osExQLaj9qLBMUocTjMrNTc3VXo5dlc1Rkt6Q3BSem5xTkVqa3ljPVoeIhxuRGtucWRLNjl2Q0lDS2JTWE84NHpKczNUNGM9ZQAAAADCPgJgBRKtAQgMEqgBChxYUm5hTHIyTjV6M0IyMFFabHBDZlVwNWhPRG89EiRlNDg4NmU4YS1mODJkLTQwZDktYjgzOS0zMDVjZTU3YTgzYmYYACAAKAAwiZHZhp8zOK3IjbHQMECtyI2x0DBKHEZCR2FZaWczUC8vd01xS2ZRNEUzUXAvajZJRT1aHyId7FR4NmE4Ujk2YlRST2hlVDhwbHpTU1hNbWxxTT1lbHfkrMI+AmAFEo4BCAISiQEKHFljU1RvbnZFU1B3cUNzNEwyY3JWaHY2OEw5OD0SJDNkYzM1NWE1LWJmYWYtNTc0NS04MzJmLTUzZjlmZWIxMjg1YhgAIAAoADDdpqfcsDA4gNHhqukvQIDR4arpL0ocb1BWa2h3QlJiVjY1S0NXUjIrSU9OSFdvT3U4PVoAZQAAAADCPgJgABKuAQgVEqkBChx0SXpaK1lXVDgyNnlBYXl5VlpQYjBnVmdMVVU9EiQxMTdhYWQxZi1kZDE1LTQxYjgtYjQ4Ni04NTE4NTYwYWU3NjQYACAAKAAwzJv2osExOOOg9qLBMUDjoPaiwTFKHGJZNlRJd1ZQbmp4NUtJdDhNSmtNTzNpWGdQTT1aICIe/+ppVElsdFVkTWlyNW5weXBDRDFIZWR6ZUc0MHc9ZSabvADCPgJgBRKtAQgKEqgBChxOTmZQbzVYejlzb1N4OWwrODdoRU1GMU45Z0k9EiRlM2NiZjcxMy1hMDczLTQ0OGItOTg3My05ZGNjNDg1MDQwZGQYACAAKAAwsY2ut+8vOJiOrrfvL0CYjq637y9KHEQxbFhIQ3pXYzdYVVFPUWpIcHJrRjBjZWxRdz1aHyId2XVJc1pVYldrcDcrenJYN2ZDcXpqdURSMzRYYz1lAAAAAMI+AmAAEo4BCAESiQEKHHl4Si82ZnZrZWNyN2twNUVRekI0dFdMcGRiRT0SJGQ3ZTA1YWJiLThmNjQtNWMzNy04YzM1LTUyMWUxNjUxZTAzZRgAIAAoADDdpqfcsDA48dDhqukvQPHQ4arpL0ocYVJDV0xnaEY5YjVJbnFLSUR2dUovanZRa0ZjPVoAZQAAAADCPgJgABKtAQgQEqgBChxjOEFCOE1PeWFJeEJiM3pZQzVGWGFpY0tiNms9EiQ0ZDA4NTAyNy03ODNhLTQ1YjEtOTU2OC0xMWY5ZGI5MGMzNDUYACAAKAAwzZv2osExOIOh9qLBMUCDofaiwTFKHFhPeDMwZTBPaXg1NGRtTFFvK1cxNkliQ1RUOD1aHyId/lNzeEhSSE96cHhabDZnNjNMY1JNdTlDUlhDTT1li6CM0cI+AmAFEqwBCAgSpwEKHEpMLzhWdXFrOUpYd3pIc1FRRHVFUTZSckJXST0SJDk0ZTUzM2ExLTE3YjEtNGY1Zi1hMjViLTU5MTc1ZjMxNjEyNRgAIAAoADCMsruQqjE4rNLhqukvQKzS4arpL0ocOFppY3ovcE1rdUFYQlZIb3VLTHJuZzc1OWEwPVoeIhxkVEVzUE0xSzRoMEFjMHZQNURreGR6M05GS0E9ZRF3fATCPgJgBRKsAQgLEqcBChx2MC9LQkl1M0JxU2NrYjV3NlFpdTE4dXlUaU09EiRkNjVlNTMzOS00ZjgzLTRmMjQtYWQxNi0wNDFiMjAxY2U1ZWUYACAAKAAwsY2ut+8vOPaOrrfvL0D2jq637y9KHE84SGRKakxJNWhzdVl3QXJZTmFzOVErNXN1cz1aHiIcOEExN00zSjkyMDNrMHhjRkJPZnNWQlc4bTk4PWUAAAAAwj4CYAUSrQEIDhKoAQocdmdJZCtSRkhVb00wMjhkTGxiZ3FBeCszc0VvPRIkNDZkM2QxMDQtZDc2OS00ZGUwLTkyNWMtMTUzMWUxMDM2YjgxGAAgACgAMI6yu5CqMTj7yI2x0DBA+8iNsdAwShxROWtHQUgzSkxHVFo2RVkyanI1MHNKN1Jjb2M9Wh8iHftEZi9MNVdlREtYRE1sYk51cVoyeXZGNUovQnM9ZQrpQKLCPgJgBRKtAQgJEqgBChxWdzhQRFhJaUR5b1pQNnR3dkVJeHhTMFk1K2M9EiQzMGY0ZjFjOS1mZjVkLTRiYjgtOWZmMC0wYjRlOWExODBmNzYYACABKAEwgIXx+a0zOI3S4arpL0CL8fD5rTNKHDlBQzZzbkxFdlBXWWZnZGdaTVcwQStiUEZLbz1aHyIdslRCRy96bmtITlRBaWV0bWJvaXhqTEpGenBPOD1lMnnrmcI+AmAFEq0BCBISqAEKHGNTRVRmWGg5ek5NZm9hcTJKVnFseG1vUC9YWT0SJDRlNGY5YmYzLWRiNDctNGQyMC1iYjgyLTM2YTQ3OWRjZGFmZBgAIAAoADDSm/aiwTE4p6L2osExQKei9qLBMUocOEVqUGNJaVplNmNLTzFXTTBMQ2tQeEQzemFNPVofIh3/UWdWRHZBbTZPQlhUZmlpZ09MbFpNTWttQzgwPWU9bIURwj4CYAUSrQEIDxKoAQocQlk3L0VLN1JXVHEvWmdQMHJPRU5oK0V5NFlvPRIkYzYwY2QyOTgtMjM3Mi00ZDM1LTg1MDUtMzBhNDgwY2FlZjg3GAAgACgAMJCyu5CqMTiqyY2x0DBAqsmNsdAwShxLZi9RQnR5UmpTcWtJRGdvM01VWUJDSjFmRjA9Wh8iHf1YV29TZ3BCdVE2Wm54ZkJBUTNSM3hQMUc1dkk9ZchIEj3CPgJgBRKuAQgUEqkBChxraFlTVkVlZktMRGRKbUgrcmVXWDRWWWUwYjg9EiQzMjRmMTg4Ni03YWMxLTQ2OTQtODBmMi04OTM5N2E3NGRlNzYYACAAKAAwz4G/2cUxOKKh9qLBMUCiofaiwTFKHDExUFBDVE95TzVmVHVXWk5HWENEUGplRENXUT1aICIe/9R4V1FSNW10ejNFVi9zUGdOaUdKR1hOQ285Tlk9ZbVF7cHCPgJgBRKuAQgWEqkBChxYQTFoVldjOVJ2YmJYZVZyVWVHZ2p4ZzYxZHM9EiQ5MjZkMzY2MS00NGVlLTQ5OTctYWVmYy03ZjQzZWQ1MzNlZjEYACAAKAAw1Jv2osExOOii9qLBMUDoovaiwTFKHEVnc0ZwaTJDZmludlBPczcvcjBDSGVqVHc5ND1aICIe//VRUGdKUTBCY2ZhaFNOTnpMTHE5Q25ZZ2pFdDA9ZXLabULCPgJgBRKuAQgYEqkBChx6Njd6eFVlQzdYeWozZmRqMUU4dE1iNnE3YW89EiQ5MmY0OGUxYi1iOTljLTQ0ZmMtYmYxOS02MWMwY2Y2OTYxZGUYACAAKAAw0Zv2osExOIKi9qLBMUCCovaiwTFKHG0zcXRpRVUwUERtNmVFaG9XQW0vcGhXeDljdz1aICIe//1ObVo4cW5keGh3ekt4MDBTcXR3NDJaSGNRTXc9ZTJ565nCPgJgBTAAOAA=",
+   "version": 1
+}
