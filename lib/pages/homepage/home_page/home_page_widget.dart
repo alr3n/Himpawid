@@ -7,6 +7,8 @@ import '/pages/homepage/chart_card/chart_card_widget.dart';
 import '/pages/homepage/navigation/navigation_widget.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/custom_code/actions/index.dart' as actions;
+import '/custom_code/actions/get_location_and_air_quality.dart'
+    show epaColor;
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -195,6 +197,106 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
   }
 
+  Widget _healthRecommendationCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final category = FFAppState().healthRisk;
+    final aqi = FFAppState().aqiValue;
+    final (icon, message) = _recommendationFor(category);
+    final accent = aqi > 0 ? epaColor(aqi) : theme.lime;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.0),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(color: accent.withOpacity(0.35), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44.0,
+            height: 44.0,
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accent, size: 22.0),
+          ),
+          SizedBox(width: 14.0),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  category.isNotEmpty ? category : 'Air quality update',
+                  style: _manrope(context, size: 15.0, weight: FontWeight.w800),
+                ),
+                SizedBox(height: 4.0),
+                Text(
+                  message,
+                  style: _manrope(context,
+                      size: 12.5,
+                      weight: FontWeight.w500,
+                      color: theme.secondaryText,
+                      height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  (IconData, String) _recommendationFor(String category) {
+    switch (category) {
+      case 'Good':
+        return (
+          Icons.check_circle_outline_rounded,
+          'Air quality is great today. It\'s a good time for outdoor '
+              'activities.'
+        );
+      case 'Moderate':
+        return (
+          Icons.info_outline_rounded,
+          'Air quality is acceptable. Unusually sensitive individuals '
+              'should consider limiting prolonged outdoor exertion.'
+        );
+      case 'Unhealthy for Sensitive Groups':
+        return (
+          Icons.warning_amber_rounded,
+          'Sensitive groups - children, older adults, and those with '
+              'asthma or heart conditions - should reduce prolonged '
+              'outdoor exertion today.'
+        );
+      case 'Unhealthy':
+        return (
+          Icons.masks_outlined,
+          'Everyone may begin to experience health effects. Consider '
+              'wearing a mask outdoors and limiting strenuous activity.'
+        );
+      case 'Very Unhealthy':
+        return (
+          Icons.report_problem_rounded,
+          'Health alert: everyone is more likely to be affected. Avoid '
+              'prolonged outdoor exertion.'
+        );
+      case 'Hazardous':
+        return (
+          Icons.dangerous_rounded,
+          'Health emergency. Avoid all outdoor activity and stay indoors '
+              'with air purification if possible.'
+        );
+      default:
+        return (
+          Icons.hourglass_top_rounded,
+          'Fetching today\'s air quality guidance...'
+        );
+    }
+  }
+
   Widget _pollutantTile(
       BuildContext context, String label, double value, String unit, int index) {
     final theme = FlutterFlowTheme.of(context);
@@ -229,7 +331,11 @@ class _HomePageWidgetState extends State<HomePageWidget>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                value > 0 ? value.toStringAsFixed(0) : '--',
+                value > 0
+                    ? (value < 10
+                        ? value.toStringAsFixed(1)
+                        : value.toStringAsFixed(0))
+                    : '--',
                 style: _manrope(context,
                     size: 28.0, weight: FontWeight.w800, height: 1.0),
               ),
@@ -513,17 +619,22 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 FFAppState().pm25Value, 'ug/m3', 0),
                             _pollutantTile(context, 'PM10',
                                 FFAppState().pm10Value, 'ug/m3', 1),
-                            _pollutantTile(
-                                context, 'O3', FFAppState().o3Value, 'ppb', 2),
+                            _pollutantTile(context, 'O3',
+                                FFAppState().o3Value, 'ug/m3', 2),
                             _pollutantTile(context, 'NO2',
-                                FFAppState().no2Value, 'ppb', 3),
+                                FFAppState().no2Value, 'ug/m3', 3),
                             _pollutantTile(context, 'SO2',
-                                FFAppState().so2Value, 'ppb', 4),
-                            _pollutantTile(
-                                context, 'CO', FFAppState().coValue, 'ppb', 5),
+                                FFAppState().so2Value, 'ug/m3', 4),
+                            _pollutantTile(context, 'CO',
+                                FFAppState().coValue, 'ug/m3', 5),
                           ],
                         ),
                       ),
+
+                      SizedBox(height: 16.0),
+
+                      // ---------- Health recommendation ----------
+                      _healthRecommendationCard(context),
 
                       SizedBox(height: 16.0),
 
