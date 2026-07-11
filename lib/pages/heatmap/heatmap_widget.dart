@@ -53,22 +53,14 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
             gmaps.LatLng(FFAppState().latitude, FFAppState().longitude), 12.0),
       );
 
-      // Enable the Google Air Quality heatmap tiles
+      // Render the AQI heatmap overlay (colored by real EPA AQI values).
       await _updateHeatmapData();
     }
   }
 
   Future<void> _updateHeatmapData() async {
-    try {
-      final overlay = await actions.fetchHeatmapTileOverlay();
-      if (mounted) {
-        setState(() {
-          _model.tileOverlays = {overlay};
-        });
-      }
-    } catch (e) {
-      print('Error enabling AQI heatmap tiles: $e');
-    }
+    await _model.updateHeatmapData();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -325,13 +317,13 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _legendDot('Good', const Color(0xFF7BD389)),
+                        _legendDot('Good', const Color(0xFF00E400)),
                         SizedBox(width: 12.0),
-                        _legendDot('Moderate', const Color(0xFFF4D35E)),
+                        _legendDot('Moderate', const Color(0xFFFFFF00)),
                         SizedBox(width: 12.0),
-                        _legendDot('Unhealthy', const Color(0xFFEE964B)),
+                        _legendDot('Unhealthy', const Color(0xFFFF0000)),
                         SizedBox(width: 12.0),
-                        _legendDot('Hazardous', const Color(0xFFE4572E)),
+                        _legendDot('Hazardous', const Color(0xFF7E0023)),
                       ],
                     ),
                   ),

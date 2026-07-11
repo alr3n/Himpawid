@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 
-import 'get_location_and_air_quality.dart' show kGoogleApiKey;
+import 'get_location_and_air_quality.dart'
+    show kOpenWeatherApiKey, epaAqiFromPm25;
 
+/// Samples a 3x3 grid of points around the user's location and fetches the
+/// real US EPA AQI (via OpenWeather PM2.5 data) for each, for rendering on
+/// [createAQIHeatmapOverlay]'s heatmap tile overlay.
 Future<List<Map<String, dynamic>>> fetchAQIHeatmapPoints() async {
   List<Map<String, dynamic>> heatmapPoints = [];
 
@@ -96,85 +98,33 @@ List<Map<String, double>> _generateLocationGrid(
   return locations;
 }
 
+/// Fetches the current EPA AQI (0-500, higher = worse) for [lat]/[lon] from
+/// OpenWeather, computed from PM2.5 via [epaAqiFromPm25] - the same
+/// conversion used everywhere else in the app, so the heatmap colors and
+/// the headline AQI number always agree.
 Future<int> _fetchAQIFromAPI(double lat, double lon) async {
   try {
-    final aqiUrl = Uri.parse(
-        'https://airquality.googleapis.com/v1/currentConditions:lookup?key=$kGoogleApiKey');
-    final response = await http.post(
-      aqiUrl,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'location': {'latitude': lat, 'longitude': lon},
-        'universalAqi': true,
-      }),
-    );
+    final url = Uri.parse(
+        'https://api.openweathermap.org/data/2.5/air_pollution?lat=$lat&lon=$lon&appid=$kOpenWeatherApiKey');
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      final indexes = data['indexes'] as List<dynamic>?;
-      if (indexes != null && indexes.isNotEmpty) {
-        final uaqi = indexes.firstWhere(
-          (i) => i['code'] == 'uaqi',
-          orElse: () => indexes.first,
-        );
-        // Universal AQI is 0-100 where higher = cleaner air.
-        // Convert to a pollution-severity scale (higher = worse) so the
-        // existing legend/color logic keeps working.
-        final int aqi = (uaqi['aqi'] as num?)?.toInt() ?? 0;
-        if (aqi >= 80) return 25; // Excellent -> Good
-        if (aqi >= 60) return 75; // Good -> Moderate
-        if (aqi >= 40) return 125; // Moderate -> Unhealthy (sensitive)
-        if (aqi >= 20) return 175; // Low -> Unhealthy
-        return 225; // Poor -> Very Unhealthy
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final entries = data['list'] as List<dynamic>?;
+      if (entries != null && entries.isNotEmpty) {
+        final components = (entries.first as Map<String, dynamic>)['components']
+                as Map<String, dynamic>? ??
+            {};
+        final pm25 = (components['pm2_5'] as num?)?.toDouble() ?? 0.0;
+        return epaAqiFromPm25(pm25);
       }
     } else {
       print(
-          'Google Air Quality API error: ${response.statusCode} - ${response.body}');
+          'OpenWeather Air Pollution API error: ${response.statusCode} - ${response.body}');
     }
   } catch (e) {
     print('Error fetching AQI for location ($lat, $lon): $e');
   }
 
   return 0; // Return 0 on error
-}
-
-double _calculateHeatmapWeight(int aqi) {
-  // Convert AQI to heatmap weight (0.0 to 1.0)
-  if (aqi <= 50) {
-    return 0.3 + (aqi / 50.0) * 0.2; // 0.3 to 0.5
-  } else if (aqi <= 100) {
-    return 0.5 + ((aqi - 50) / 50.0) * 0.2; // 0.5 to 0.7
-  } else if (aqi <= 150) {
-    return 0.7 + ((aqi - 100) / 50.0) * 0.15; // 0.7 to 0.85
-  } else {
-    return 0.85 + ((aqi - 150) / 100.0) * 0.15; // 0.85 to 1.0
-  }
-}
-
-/// Google Air Quality heatmap tiles rendered directly on the map.
-Future<gmaps.TileOverlay> fetchHeatmapTileOverlay() async {
-  final tileOverlay = gmaps.TileOverlay(
-    tileOverlayId: const gmaps.TileOverlayId('google_aqi_heatmap'),
-    tileProvider: _GoogleAqiTileProvider(),
-    transparency: 0.25,
-  );
-
-  return tileOverlay;
-}
-
-class _GoogleAqiTileProvider extends gmaps.TileProvider {
-  @override
-  Future<gmaps.Tile> getTile(int x, int y, int? zoom) async {
-    try {
-      final url = Uri.parse(
-          'https://airquality.googleapis.com/v1/mapTypes/UAQI_INDIGO_PERSIAN/heatmapTiles/$zoom/$x/$y?key=$kGoogleApiKey');
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        return gmaps.Tile(256, 256, response.bodyBytes);
-      }
-    } catch (e) {
-      print('Error fetching AQI heatmap tile ($zoom/$x/$y): $e');
-    }
-    return gmaps.Tile(256, 256, Uint8List(0));
-  }
 }

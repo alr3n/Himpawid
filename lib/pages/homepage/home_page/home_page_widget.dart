@@ -586,12 +586,33 @@ class _HomePageWidgetState extends State<HomePageWidget>
                       SizedBox(height: 28.0),
 
                       // ---------- Blog ----------
-                      Text(
-                        'From the blog',
-                        style: _manrope(context,
-                            size: 22.0, weight: FontWeight.w800),
-                      ).animateOnPageLoad(
-                          animationsMap['textOnPageLoadAnimation2']!),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'From the blog',
+                            style: _manrope(context,
+                                size: 22.0, weight: FontWeight.w800),
+                          ).animateOnPageLoad(
+                              animationsMap['textOnPageLoadAnimation2']!),
+                          InkWell(
+                            splashColor: Colors.transparent,
+                            focusColor: Colors.transparent,
+                            hoverColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
+                            onTap: () async {
+                              context.pushNamed(BlogsWidget.routeName);
+                            },
+                            child: Text(
+                              'See all',
+                              style: _manrope(context,
+                                  size: 13.0,
+                                  weight: FontWeight.w700,
+                                  color: theme.secondaryText),
+                            ),
+                          ),
+                        ],
+                      ),
                       SizedBox(height: 14.0),
                       Container(
                         width: double.infinity,
@@ -603,20 +624,38 @@ class _HomePageWidgetState extends State<HomePageWidget>
                           scrollDirection: Axis.horizontal,
                           controller: _model.listViewController,
                           children: [
-                            wrapWithModel(
-                              model: _model.articleCard1Model,
-                              updateCallback: () => safeSetState(() {}),
-                              child: ArticleCard1Widget(
-                                title: '',
-                                readingTime: '3 min',
-                                image: '',
+                            InkWell(
+                              splashColor: Colors.transparent,
+                              focusColor: Colors.transparent,
+                              hoverColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              onTap: () async {
+                                context.pushNamed(BlogsWidget.routeName);
+                              },
+                              child: wrapWithModel(
+                                model: _model.articleCard1Model,
+                                updateCallback: () => safeSetState(() {}),
+                                child: ArticleCard1Widget(
+                                  title: '',
+                                  readingTime: '3 min',
+                                  image: '',
+                                ),
+                              ).animateOnPageLoad(animationsMap[
+                                  'articleCard1OnPageLoadAnimation']!),
+                            ),
+                            InkWell(
+                              splashColor: Colors.transparent,
+                              focusColor: Colors.transparent,
+                              hoverColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              onTap: () async {
+                                context.pushNamed(BlogsWidget.routeName);
+                              },
+                              child: wrapWithModel(
+                                model: _model.articleCard2Model,
+                                updateCallback: () => safeSetState(() {}),
+                                child: ArticleCard2Widget(),
                               ),
-                            ).animateOnPageLoad(animationsMap[
-                                'articleCard1OnPageLoadAnimation']!),
-                            wrapWithModel(
-                              model: _model.articleCard2Model,
-                              updateCallback: () => safeSetState(() {}),
-                              child: ArticleCard2Widget(),
                             ),
                           ],
                         ),

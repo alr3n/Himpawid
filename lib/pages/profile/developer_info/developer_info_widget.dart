@@ -37,11 +37,10 @@ class _DeveloperInfoWidgetState extends State<DeveloperInfoWidget> {
   static const List<String> _developers = [
     'Alren Dave Grampon – Main Developer',
     'Angel Delgado – Support Developer',
-    'Von Rio Ante – UI/UX Designer',
   ];
 
   static const List<String> _appDetails = [
-    'Version: 1.0',
+    'Version: 2.0',
     'Category: Weather',
     'Compatibility: Android, iOS, Web',
     'Language: English',

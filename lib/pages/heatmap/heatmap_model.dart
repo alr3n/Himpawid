@@ -8,7 +8,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '/custom_code/actions/get_location_and_air_quality.dart'
-    show kGoogleApiKey;
+    show kOpenWeatherApiKey, epaAqiFromPm25;
 
 class HeatmapModel extends FlutterFlowModel<HeatmapWidget> {
   ///  State fields for stateful widgets in this page.
@@ -49,35 +49,24 @@ class HeatmapModel extends FlutterFlowModel<HeatmapWidget> {
     }
   }
 
+  /// Fetches the EPA AQI (0-500, higher = worse) at an arbitrary map
+  /// location, e.g. for a tap-to-query interaction.
   Future<int> getAQIAtLocation(double lat, double lon) async {
     try {
-      final aqiUrl = Uri.parse(
-          'https://airquality.googleapis.com/v1/currentConditions:lookup?key=$kGoogleApiKey');
-      final response = await http.post(
-        aqiUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'location': {'latitude': lat, 'longitude': lon},
-          'universalAqi': true,
-        }),
-      );
+      final url = Uri.parse(
+          'https://api.openweathermap.org/data/2.5/air_pollution?lat=$lat&lon=$lon&appid=$kOpenWeatherApiKey');
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final indexes = data['indexes'] as List<dynamic>?;
-        if (indexes != null && indexes.isNotEmpty) {
-          final uaqi = indexes.firstWhere(
-            (i) => i['code'] == 'uaqi',
-            orElse: () => indexes.first,
-          );
-          // Universal AQI is 0-100 (higher = cleaner). Convert to a
-          // severity scale (higher = worse) for the legend colors.
-          final int aqi = (uaqi['aqi'] as num?)?.toInt() ?? 0;
-          if (aqi >= 80) return 25; // Excellent
-          if (aqi >= 60) return 75; // Good
-          if (aqi >= 40) return 125; // Moderate
-          if (aqi >= 20) return 175; // Low
-          return 250; // Poor
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final entries = data['list'] as List<dynamic>?;
+        if (entries != null && entries.isNotEmpty) {
+          final components =
+              (entries.first as Map<String, dynamic>)['components']
+                      as Map<String, dynamic>? ??
+                  {};
+          final pm25 = (components['pm2_5'] as num?)?.toDouble() ?? 0.0;
+          return epaAqiFromPm25(pm25);
         }
       }
     } catch (e) {
