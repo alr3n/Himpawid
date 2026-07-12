@@ -1,4 +1,6 @@
 import '/flutter_flow/flutter_flow_animations.dart';
+import '/flutter_flow/flutter_flow_charts.dart';
+import '/flutter_flow/flutter_flow_google_map.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/pages/homepage/blogs/article_card1/article_card1_widget.dart';
@@ -28,12 +30,14 @@ class _DashboardFeature {
     required this.title,
     required this.description,
     required this.onTap,
+    required this.previewBuilder,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final void Function(BuildContext context) onTap;
+  final Widget Function(BuildContext context) previewBuilder;
 }
 
 class HomePageWidget extends StatefulWidget {
@@ -55,6 +59,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   final animationsMap = <String, AnimationInfo>{};
 
+  // ---------- Explore card preview state ----------
+  final Completer<GoogleMapController> _previewMapController = Completer();
+  List<actions.CityAqi>? _topRankings;
+  List<Map<String, dynamic>> _previewFavourites = [];
+  final Map<String, int> _favouriteAqi = {};
+  actions.AqiHistoryResult? _weekHistory;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +77,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       await actions.fetchAqiForecast(12);
       if (mounted) safeSetState(() {});
       await _initializeFCM();
+      _loadExplorePreviews();
     });
 
     // Start periodic notification generation every 3 minutes
@@ -146,6 +158,36 @@ class _HomePageWidgetState extends State<HomePageWidget>
           ),
         ],
       ),
+    });
+  }
+
+  /// Kicks off the data each Explore card preview needs, independently -
+  /// each populates and updates its own card as soon as it's ready rather
+  /// than all waiting on the slowest one.
+  void _loadExplorePreviews() {
+    // Favourites: read from the user's doc, then fetch AQI per saved spot.
+    final rawFavourites = currentUserDocument?.favouriteLocations ?? [];
+    _previewFavourites = rawFavourites
+        .whereType<Map>()
+        .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+        .toList();
+    for (final fav in _previewFavourites) {
+      final lat = (fav['latitude'] as num).toDouble();
+      final lon = (fav['longitude'] as num).toDouble();
+      actions.fetchAqiForCoordinates(lat, lon).then((aqi) {
+        if (mounted) setState(() => _favouriteAqi[fav['name'] as String] = aqi);
+      });
+    }
+    if (mounted) setState(() {});
+
+    // Ranking: worst cities, worldwide.
+    actions.fetchCityRankings().then((result) {
+      if (mounted) setState(() => _topRankings = result);
+    });
+
+    // Historical: this week's trend.
+    actions.fetchAqiHistory(7).then((result) {
+      if (mounted) setState(() => _weekHistory = result);
     });
   }
 
@@ -318,6 +360,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       description: 'Check air quality condition in your area with '
           'interactive maps for better understanding.',
       onTap: (context) => context.pushNamed(HeatmapWidget.routeName),
+      previewBuilder: _mapPreview,
     ),
     _DashboardFeature(
       icon: Icons.leaderboard_rounded,
@@ -325,6 +368,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       description: 'Live ranking of most polluted cities in the world to '
           'know your city\'s rank.',
       onTap: (context) => context.pushNamed(RankingWidget.routeName),
+      previewBuilder: _rankingPreview,
     ),
     _DashboardFeature(
       icon: Icons.favorite_rounded,
@@ -332,6 +376,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       description: 'Follow your favourite locations for timely updates, '
           'insights and informed decision.',
       onTap: (context) => context.pushNamed(FavouritesWidget.routeName),
+      previewBuilder: _favouritesPreview,
     ),
     _DashboardFeature(
       icon: Icons.insights_rounded,
@@ -339,6 +384,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       description: 'See what you have breathed with historical data '
           'patterns as monthly and weekly air quality data monitoring.',
       onTap: (context) => context.pushNamed(HistoricalWidget.routeName),
+      previewBuilder: _historicalPreview,
     ),
     _DashboardFeature(
       icon: Icons.health_and_safety_rounded,
@@ -346,6 +392,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       description: 'Follow these advices to protect yourself from air '
           'pollution exposure and stay healthy.',
       onTap: (context) => context.pushNamed(HealthAdviceWidget.routeName),
+      previewBuilder: _healthAdvicePreview,
     ),
   ];
 
@@ -364,46 +411,269 @@ class _HomePageWidgetState extends State<HomePageWidget>
           color: theme.secondaryBackground,
           borderRadius: BorderRadius.circular(24.0),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48.0,
+                  height: 48.0,
+                  decoration: BoxDecoration(
+                    color: theme.lime,
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      Icon(feature.icon, color: theme.raisinBlack, size: 24.0),
+                ),
+                SizedBox(width: 14.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        feature.title,
+                        style: _manrope(context,
+                            size: 15.0,
+                            weight: FontWeight.w800,
+                            height: 1.25),
+                      ),
+                      SizedBox(height: 6.0),
+                      Text(
+                        feature.description,
+                        style: _manrope(context,
+                            size: 12.0,
+                            weight: FontWeight.w500,
+                            color: theme.secondaryText,
+                            height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 6.0),
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.secondaryText, size: 22.0),
+              ],
+            ),
+            SizedBox(height: 14.0),
             Container(
-              width: 48.0,
-              height: 48.0,
+              width: double.infinity,
+              padding: EdgeInsets.all(12.0),
               decoration: BoxDecoration(
-                color: theme.lime,
-                shape: BoxShape.circle,
+                color: theme.primaryBackground,
+                borderRadius: BorderRadius.circular(16.0),
               ),
-              child: Icon(feature.icon, color: theme.raisinBlack, size: 24.0),
+              child: feature.previewBuilder(context),
             ),
-            SizedBox(width: 14.0),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    feature.title,
-                    style: _manrope(context,
-                        size: 15.0, weight: FontWeight.w800, height: 1.25),
-                  ),
-                  SizedBox(height: 6.0),
-                  Text(
-                    feature.description,
-                    style: _manrope(context,
-                        size: 12.0,
-                        weight: FontWeight.w500,
-                        color: theme.secondaryText,
-                        height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 6.0),
-            Icon(Icons.chevron_right_rounded,
-                color: theme.secondaryText, size: 22.0),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _previewPlaceholder(BuildContext context, String message) {
+    final theme = FlutterFlowTheme.of(context);
+    return SizedBox(
+      height: 40.0,
+      child: Center(
+        child: Text(
+          message,
+          style: _manrope(context,
+              size: 11.5, weight: FontWeight.w600, color: theme.secondaryText),
+        ),
+      ),
+    );
+  }
+
+  Widget _mapPreview(BuildContext context) {
+    final hasLocation =
+        FFAppState().latitude != 0.0 || FFAppState().longitude != 0.0;
+    if (!hasLocation) {
+      return _previewPlaceholder(context, 'Locating you...');
+    }
+    final here = LatLng(FFAppState().latitude, FFAppState().longitude);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.0),
+      child: SizedBox(
+        height: 110.0,
+        child: FlutterFlowGoogleMap(
+          controller: _previewMapController,
+          initialLocation: here,
+          markers: [FlutterFlowMarker('current', here)],
+          markerColor: GoogleMarkerColor.green,
+          mapType: MapType.normal,
+          style: GoogleMapStyle.airQuality,
+          initialZoom: 11.0,
+          allowInteraction: false,
+          allowZoom: false,
+          showZoomControls: false,
+          showLocation: false,
+          showCompass: false,
+          showMapToolbar: false,
+          showTraffic: false,
+        ),
+      ),
+    );
+  }
+
+  Widget _rankingPreview(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    if (_topRankings == null) {
+      return _previewPlaceholder(context, 'Loading rankings...');
+    }
+    if (_topRankings!.isEmpty) {
+      return _previewPlaceholder(context, 'Rankings unavailable right now.');
+    }
+    return Column(
+      children: _topRankings!.take(3).toList().asMap().entries.map((entry) {
+        final rank = entry.key + 1;
+        final city = entry.value;
+        final color =
+            city.aqi > 0 ? epaColor(city.aqi) : theme.secondaryText;
+        return Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 18.0,
+                child: Text('$rank',
+                    style: _manrope(context,
+                        size: 12.0,
+                        weight: FontWeight.w800,
+                        color: theme.secondaryText)),
+              ),
+              Expanded(
+                child: Text(city.city,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _manrope(context,
+                        size: 12.5, weight: FontWeight.w700)),
+              ),
+              Container(
+                padding: EdgeInsetsDirectional.fromSTEB(8.0, 3.0, 8.0, 3.0),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                child: Text('${city.aqi}',
+                    style: _manrope(context,
+                        size: 10.5, weight: FontWeight.w800, color: color)),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _favouritesPreview(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    if (_previewFavourites.isEmpty) {
+      return _previewPlaceholder(
+          context, 'No favourites yet - tap to add one.');
+    }
+    return Column(
+      children: _previewFavourites.take(2).map((fav) {
+        final name = fav['name'] as String;
+        final aqi = _favouriteAqi[name];
+        final color =
+            (aqi != null && aqi > 0) ? epaColor(aqi) : theme.secondaryText;
+        return Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_rounded,
+                  size: 14.0, color: theme.slateDeep),
+              SizedBox(width: 6.0),
+              Expanded(
+                child: Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _manrope(context,
+                        size: 12.5, weight: FontWeight.w700)),
+              ),
+              Text(
+                aqi == null ? '...' : (aqi > 0 ? '$aqi' : '--'),
+                style: _manrope(context,
+                    size: 11.0, weight: FontWeight.w800, color: color),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _historicalPreview(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    if (_weekHistory == null) {
+      return _previewPlaceholder(context, 'Loading trend...');
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 46.0,
+          width: double.infinity,
+          child: FlutterFlowLineChart(
+            data: [
+              FFLineChartData(
+                xData: _weekHistory!.xValues,
+                yData: _weekHistory!.yValues,
+                settings: LineChartBarData(
+                  color: theme.lime,
+                  barWidth: 3.0,
+                  isCurved: true,
+                  dotData: FlDotData(show: false),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: theme.lime.withOpacity(0.15),
+                  ),
+                ),
+              ),
+            ],
+            chartStylingInfo: ChartStylingInfo(
+              backgroundColor: Colors.transparent,
+              showBorder: false,
+            ),
+            axisBounds: AxisBounds(),
+            xAxisLabelInfo: AxisLabelInfo(),
+            yAxisLabelInfo: AxisLabelInfo(),
+          ),
+        ),
+        SizedBox(height: 6.0),
+        Text(
+          'This week avg: ${_weekHistory!.average} AQI '
+          '(${_weekHistory!.minAqi}-${_weekHistory!.maxAqi})',
+          style: _manrope(context,
+              size: 11.0, weight: FontWeight.w600, color: theme.secondaryText),
+        ),
+      ],
+    );
+  }
+
+  Widget _healthAdvicePreview(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final (icon, message) = _recommendationFor(FFAppState().healthRisk);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16.0, color: theme.slateDeep),
+        SizedBox(width: 8.0),
+        Expanded(
+          child: Text(
+            message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: _manrope(context,
+                size: 11.5,
+                weight: FontWeight.w600,
+                color: theme.secondaryText,
+                height: 1.35),
+          ),
+        ),
+      ],
     );
   }
 
