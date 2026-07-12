@@ -25,16 +25,14 @@ class HeatmapWidget extends StatefulWidget {
   State<HeatmapWidget> createState() => _HeatmapWidgetState();
 }
 
-enum _HeatmapStatus { loading, ready, empty, error }
-
 class _HeatmapWidgetState extends State<HeatmapWidget> {
   late HeatmapModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   Timer? _panRefreshDebounce;
-  LatLng? _lastFetchedCenter;
-  _HeatmapStatus _heatmapStatus = _HeatmapStatus.loading;
+  LatLng? _lastSummaryCenter;
+  bool _locating = true;
 
   // Bottom summary card state for wherever the map is currently centered.
   // Null means "show the device's own current location" (the initial
@@ -58,62 +56,42 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
     setState(() {
       _panAqi = null;
       _panLocationName = null;
+      _locating = true;
     });
 
     // Get user's location
     await actions.getLocationAndAirQuality();
-    if (mounted) setState(() {});
 
     if (FFAppState().latitude != 0.0 && FFAppState().longitude != 0.0) {
+      final here = LatLng(FFAppState().latitude, FFAppState().longitude);
       setState(() {
-        _model.mapCenter =
-            LatLng(FFAppState().latitude, FFAppState().longitude);
+        _model.mapCenter = here;
+        _lastSummaryCenter = here;
+        _locating = false;
       });
 
-      // Move camera to user's location
+      // Move camera to user's location - the AQI tile layer requests and
+      // renders whatever tiles become visible automatically, no manual
+      // fetch/rebuild step needed.
       _model.mapController.move(
         latlong.LatLng(FFAppState().latitude, FFAppState().longitude),
         12.0,
       );
-
-      // Render the AQI heatmap overlay (colored by real EPA AQI values).
-      await _updateHeatmapData(
-        centerLat: FFAppState().latitude,
-        centerLng: FFAppState().longitude,
-      );
+    } else if (mounted) {
+      setState(() => _locating = false);
     }
   }
 
-  Future<void> _updateHeatmapData({double? centerLat, double? centerLng}) async {
-    if (mounted) setState(() => _heatmapStatus = _HeatmapStatus.loading);
-    try {
-      final pointCount = await _model.updateHeatmapData(
-        centerLat: centerLat,
-        centerLng: centerLng,
-      );
-      if (centerLat != null && centerLng != null) {
-        _lastFetchedCenter = LatLng(centerLat, centerLng);
-      }
-      if (mounted) {
-        setState(() {
-          _heatmapStatus =
-              pointCount > 0 ? _HeatmapStatus.ready : _HeatmapStatus.empty;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _heatmapStatus = _HeatmapStatus.error);
-    }
-  }
-
-  /// Called when the map settles after a pan/zoom. Re-fetches AQI for the
-  /// newly-visible area (debounced, and only if the camera actually moved
-  /// a meaningful distance from where we last fetched) so the coloring
-  /// tracks wherever the user is currently looking, not just where the
-  /// map first opened.
+  /// Called when the map settles after a pan/zoom. Updates the bottom
+  /// summary card with the real AQI/name for wherever the map is now
+  /// centered (debounced, and only if the camera actually moved a
+  /// meaningful distance since the last update) - the AQI color-wash
+  /// itself needs no equivalent handling here, since `flutter_map`
+  /// requests whatever tiles are newly visible on its own.
   void _onCameraIdle(LatLng latLng) {
     _model.mapCenter = latLng;
 
-    final last = _lastFetchedCenter;
+    final last = _lastSummaryCenter;
     if (last != null) {
       final movedFar = (latLng.latitude - last.latitude).abs() > 0.01 ||
           (latLng.longitude - last.longitude).abs() > 0.01;
@@ -122,10 +100,7 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
 
     _panRefreshDebounce?.cancel();
     _panRefreshDebounce = Timer(const Duration(milliseconds: 500), () {
-      _updateHeatmapData(
-        centerLat: latLng.latitude,
-        centerLng: latLng.longitude,
-      );
+      _lastSummaryCenter = latLng;
       _updatePanSummary(latLng);
     });
   }
@@ -197,7 +172,7 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
                 allowZoom: true,
                 showLocation: true,
                 centerMapOnMarkerTap: true,
-                imageOverlay: _model.aqiOverlay,
+                overlayLayers: [_model.aqiTileLayer],
               ),
             ),
 
@@ -311,12 +286,12 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
               ),
             ),
 
-            // ---------- Heatmap status banner ----------
-            if (_heatmapStatus != _HeatmapStatus.ready)
+            // ---------- Locating banner ----------
+            if (_locating)
               SafeArea(
                 child: Align(
                   alignment: AlignmentDirectional(0.0, -0.62),
-                  child: _heatmapStatusBanner(context),
+                  child: _locatingBanner(context),
                 ),
               ),
 
@@ -336,38 +311,8 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
     );
   }
 
-  Widget _heatmapStatusBanner(BuildContext context) {
+  Widget _locatingBanner(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-
-    late final IconData icon;
-    late final String message;
-    final bool showRetry;
-    final bool showSpinner;
-
-    switch (_heatmapStatus) {
-      case _HeatmapStatus.loading:
-        icon = Icons.hourglass_top_rounded;
-        message = 'Fetching air quality across the map...';
-        showRetry = false;
-        showSpinner = true;
-        break;
-      case _HeatmapStatus.empty:
-        icon = Icons.info_outline_rounded;
-        message = FFAppState().latitude == 0.0 && FFAppState().longitude == 0.0
-            ? 'Waiting for your location...'
-            : 'No air quality data available for this area.';
-        showRetry = true;
-        showSpinner = false;
-        break;
-      case _HeatmapStatus.error:
-        icon = Icons.error_outline_rounded;
-        message = 'Couldn\'t load air quality data.';
-        showRetry = true;
-        showSpinner = false;
-        break;
-      case _HeatmapStatus.ready:
-        return const SizedBox.shrink();
-    }
 
     return Container(
       margin: EdgeInsetsDirectional.fromSTEB(24.0, 0.0, 24.0, 0.0),
@@ -386,42 +331,23 @@ class _HeatmapWidgetState extends State<HeatmapWidget> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showSpinner)
-            SizedBox(
-              width: 14.0,
-              height: 14.0,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.0,
-                color: theme.lime,
-              ),
-            )
-          else
-            Icon(icon, color: theme.secondaryText, size: 16.0),
-          SizedBox(width: 8.0),
-          Flexible(
-            child: Text(
-              message,
-              style: GoogleFonts.manrope(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: theme.primaryText,
-              ),
+          SizedBox(
+            width: 14.0,
+            height: 14.0,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.0,
+              color: theme.lime,
             ),
           ),
-          if (showRetry) ...[
-            SizedBox(width: 8.0),
-            InkWell(
-              onTap: _initializeUserLocation,
-              child: Text(
-                'Retry',
-                style: GoogleFonts.manrope(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  color: theme.lime,
-                ),
-              ),
+          SizedBox(width: 8.0),
+          Text(
+            'Locating you...',
+            style: GoogleFonts.manrope(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: theme.primaryText,
             ),
-          ],
+          ),
         ],
       ),
     );

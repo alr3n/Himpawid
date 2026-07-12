@@ -1,5 +1,4 @@
-export 'fetch_heatmap_aqi.dart' show fetchAQIHeatmapPoints;
-export 'create_aqi_heatmap_overlay.dart' show createAQIHeatmapOverlay;
+export 'create_aqi_heatmap_overlay.dart' show buildAqiTileLayer;
 export 'get_location_and_air_quality.dart'
     show getLocationAndAirQuality, fetchAqiForCoordinates, reverseGeocodeCityName;
 export 'generate_notification.dart' show generateNotification;

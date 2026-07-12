@@ -54,15 +54,6 @@ class FlutterFlowMarker {
   final Future Function()? onTap;
 }
 
-/// A single geo-bounded image drawn over the map, e.g. the AQI color-wash
-/// overlay - replaces Google Maps' tile-based `TileOverlay` with the
-/// simpler bounds+image model `flutter_map`'s `OverlayImageLayer` uses.
-class MapImageOverlay {
-  const MapImageOverlay({required this.bounds, required this.image});
-  final LatLngBounds bounds;
-  final ImageProvider image;
-}
-
 /// Live air-quality map, backed by MapTiler tiles instead of Google Maps -
 /// MapTiler works immediately with just an API key (no Google Cloud billing
 /// account needed), which is what made the map reliably loadable at all.
@@ -79,7 +70,7 @@ class FlutterFlowMap extends StatefulWidget {
     this.allowZoom = true,
     this.showLocation = true,
     this.centerMapOnMarkerTap = false,
-    this.imageOverlay,
+    this.overlayLayers = const [],
     // Whether the map takes gesture preference over the surrounding page.
     // Useful when the map sits inside a scrolling widget and gestures
     // within the map shouldn't also scroll the page behind it.
@@ -98,7 +89,9 @@ class FlutterFlowMap extends StatefulWidget {
   final bool allowZoom;
   final bool showLocation;
   final bool centerMapOnMarkerTap;
-  final MapImageOverlay? imageOverlay;
+  /// Extra map layers drawn above the base tiles and below the markers -
+  /// e.g. a live data overlay like the AQI color-wash tile layer.
+  final List<Widget> overlayLayers;
   final bool mapTakesGesturePreference;
 
   @override
@@ -147,13 +140,7 @@ class _FlutterFlowMapState extends State<FlutterFlowMap> {
           userAgentPackageName: 'com.himpawid.app',
           maxNativeZoom: 20,
         ),
-        if (widget.imageOverlay != null)
-          OverlayImageLayer(overlayImages: [
-            OverlayImage(
-              bounds: widget.imageOverlay!.bounds,
-              imageProvider: widget.imageOverlay!.image,
-            ),
-          ]),
+        ...widget.overlayLayers,
         if (widget.showLocation && widget.initialLocation != null)
           MarkerLayer(markers: [
             Marker(
