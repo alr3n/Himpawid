@@ -1,4 +1,5 @@
 import '/auth/firebase_auth/auth_util.dart';
+import '/auth/firebase_auth/google_auth.dart' show signOutWithGoogle;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -216,10 +217,19 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     if (confirmed != true) return;
 
     GoRouter.of(context).prepareAuthEvent();
+    // Clear the native Google session too, not just Firebase's - otherwise
+    // a later "Continue with Google" silently reauths the same account
+    // instead of showing the account picker.
+    await signOutWithGoogle().catchError((_) {});
     await authManager.signOut();
+    // authenticatedUserStream resets this asynchronously as a side effect
+    // of the Firebase auth-state change; clear it synchronously too so
+    // nothing reads a stale user document in the meantime.
+    currentUserDocument = null;
     GoRouter.of(context).clearRedirectLocation();
 
-    context.goNamedAuth(WelcomeWidget.routeName, context.mounted);
+    if (!context.mounted) return;
+    context.goNamedAuth(LoginWidget.routeName, context.mounted);
   }
 
   // ------------------------------------------------------------------
@@ -351,11 +361,25 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilds whenever Firebase Auth's sign-in state or the user's
+    // Firestore document changes, so a login/logout elsewhere in the app
+    // is reflected here immediately without needing to reopen the page.
+    return AuthUserStreamWidget(builder: (context) => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    final displayName =
-        currentUserDisplayName.isNotEmpty ? currentUserDisplayName : 'Guest User';
-    final email =
-        currentUserEmail.isNotEmpty ? currentUserEmail : 'Not signed in';
+    // Only show placeholder text when nobody is actually signed in -
+    // a signed-in user with a missing field (e.g. no display name on
+    // record) should read as "Signed in", not be mistaken for a guest.
+    final displayName = !loggedIn
+        ? 'Guest'
+        : (currentUserDisplayName.isNotEmpty
+            ? currentUserDisplayName
+            : 'Signed in');
+    final email = !loggedIn
+        ? 'Not signed in'
+        : (currentUserEmail.isNotEmpty ? currentUserEmail : 'Signed in');
 
     return GestureDetector(
       onTap: () {
