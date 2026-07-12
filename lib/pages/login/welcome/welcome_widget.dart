@@ -1,17 +1,40 @@
-import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/flutter_flow/onboarding_util.dart';
 import '/index.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart'
-    as smooth_page_indicator;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'welcome_model.dart';
 export 'welcome_model.dart';
 
+class _OnboardingPage {
+  const _OnboardingPage({
+    required this.title,
+    required this.description,
+    this.icon,
+    this.lottieAsset,
+    required this.blobColor,
+    required this.iconColor,
+  });
+
+  final String title;
+  final String description;
+  final IconData? icon;
+  final String? lottieAsset;
+  final Color blobColor;
+  final Color iconColor;
+}
+
+/// First-login onboarding carousel - shown once per device (gated by a
+/// SharedPreferences flag, see onboarding_util.dart), then never again
+/// unless that preference is cleared. Reachable both right after a
+/// successful sign-in (see login_widget.dart) and, defensively, via any
+/// other path that lands here (e.g. FirstSlideWidget's "Begin" button on a
+/// returning session) - either way, it self-checks the flag on load and
+/// skips straight to the dashboard if onboarding was already completed.
 class WelcomeWidget extends StatefulWidget {
   const WelcomeWidget({super.key});
 
@@ -22,596 +45,285 @@ class WelcomeWidget extends StatefulWidget {
   State<WelcomeWidget> createState() => _WelcomeWidgetState();
 }
 
-class _WelcomeWidgetState extends State<WelcomeWidget>
-    with TickerProviderStateMixin {
+class _WelcomeWidgetState extends State<WelcomeWidget> {
   late WelcomeModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  late final PageController _pageController;
+  int _currentPage = 0;
 
-  final animationsMap = <String, AnimationInfo>{};
+  // null while checking the stored preference, false while redirecting
+  // away, true once it's confirmed this device hasn't seen onboarding yet.
+  bool? _showOnboarding;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => WelcomeModel());
-
-    animationsMap.addAll({
-      'pageViewOnActionTriggerAnimation': AnimationInfo(
-        trigger: AnimationTrigger.onActionTrigger,
-        applyInitialState: true,
-        effectsBuilder: () => [
-          MoveEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 300.0.ms,
-            begin: Offset(0.0, 0.0),
-            end: Offset(-100.0, 0.0),
-          ),
-          FadeEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 300.0.ms,
-            begin: 1.0,
-            end: 0.0,
-          ),
-          ScaleEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 300.0.ms,
-            begin: Offset(1.0, 1.0),
-            end: Offset(0.9, 0.9),
-          ),
-        ],
-      ),
-      'textOnPageLoadAnimation1': AnimationInfo(
-        trigger: AnimationTrigger.onPageLoad,
-        effectsBuilder: () => [
-          VisibilityEffect(duration: 1.ms),
-          MoveEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 400.0.ms,
-            begin: Offset(10.0, 0.0),
-            end: Offset(0.0, 0.0),
-          ),
-          FadeEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 200.0.ms,
-            begin: 0.0,
-            end: 1.0,
-          ),
-        ],
-      ),
-      'textOnPageLoadAnimation2': AnimationInfo(
-        trigger: AnimationTrigger.onPageLoad,
-        effectsBuilder: () => [
-          VisibilityEffect(duration: 50.ms),
-          MoveEffect(
-            curve: Curves.easeOut,
-            delay: 50.0.ms,
-            duration: 400.0.ms,
-            begin: Offset(22.0, 0.0),
-            end: Offset(0.0, 0.0),
-          ),
-          FadeEffect(
-            curve: Curves.easeInOut,
-            delay: 50.0.ms,
-            duration: 200.0.ms,
-            begin: 0.0,
-            end: 1.0,
-          ),
-        ],
-      ),
-      'textOnPageLoadAnimation3': AnimationInfo(
-        trigger: AnimationTrigger.onPageLoad,
-        effectsBuilder: () => [
-          VisibilityEffect(duration: 1.ms),
-          MoveEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 400.0.ms,
-            begin: Offset(10.0, 0.0),
-            end: Offset(0.0, 0.0),
-          ),
-          FadeEffect(
-            curve: Curves.easeInOut,
-            delay: 0.0.ms,
-            duration: 200.0.ms,
-            begin: 0.0,
-            end: 1.0,
-          ),
-        ],
-      ),
-      'textOnPageLoadAnimation4': AnimationInfo(
-        trigger: AnimationTrigger.onPageLoad,
-        effectsBuilder: () => [
-          MoveEffect(
-            curve: Curves.easeOut,
-            delay: 50.0.ms,
-            duration: 400.0.ms,
-            begin: Offset(22.0, 0.0),
-            end: Offset(0.0, 0.0),
-          ),
-          FadeEffect(
-            curve: Curves.easeInOut,
-            delay: 50.0.ms,
-            duration: 200.0.ms,
-            begin: 0.0,
-            end: 1.0,
-          ),
-        ],
-      ),
-    });
-    setupAnimations(
-      animationsMap.values.where((anim) =>
-          anim.trigger == AnimationTrigger.onActionTrigger ||
-          !anim.applyInitialState),
-      this,
-    );
+    _pageController = PageController()..addListener(_onScroll);
+    _checkOnboardingStatus();
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _model.dispose();
-
     super.dispose();
+  }
+
+  void _onScroll() {
+    final page = _pageController.page?.round() ?? 0;
+    if (page != _currentPage && mounted) {
+      setState(() => _currentPage = page);
+    }
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    final seen = await hasSeenOnboarding();
+    if (!mounted) return;
+    if (seen) {
+      setState(() => _showOnboarding = false);
+      context.goNamed(HomePageWidget.routeName);
+    } else {
+      setState(() => _showOnboarding = true);
+    }
+  }
+
+  Future<void> _finishOnboarding() async {
+    await markOnboardingShown();
+    if (!mounted) return;
+    context.goNamed(HomePageWidget.routeName);
+  }
+
+  void _nextPage(int pageCount) {
+    if (_currentPage >= pageCount - 1) return;
+    _pageController.animateToPage(
+      _currentPage + 1,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  List<_OnboardingPage> _pages(FlutterFlowTheme theme) => [
+        _OnboardingPage(
+          title: 'Welcome to Himpawid',
+          description:
+              'Monitor real-time air quality and environmental conditions wherever you are.',
+          icon: Icons.air_rounded,
+          blobColor: theme.limeSoft,
+          iconColor: theme.slateDeep,
+        ),
+        _OnboardingPage(
+          title: 'Explore the AQI Map',
+          description:
+              'View live air quality levels around your location with an interactive map and detailed AQI information.',
+          icon: Icons.map_rounded,
+          blobColor: theme.azureWeb,
+          iconColor: theme.slateDeep,
+        ),
+        _OnboardingPage(
+          title: 'Stay Informed',
+          description:
+              'Get personalized AQI alerts, historical trends, and a built-in assistant to help you make healthier decisions.',
+          lottieAsset: 'assets/jsons/hot-circle.json',
+          blobColor: theme.limeSoft,
+          iconColor: theme.slateDeep,
+        ),
+        _OnboardingPage(
+          title: 'Let\'s Get Started',
+          description:
+              'Everything is ready. Explore Himpawid and stay aware of your environment.',
+          lottieAsset: 'assets/jsons/check.json',
+          blobColor: theme.limeSoft,
+          iconColor: theme.slateDeep,
+        ),
+      ];
+
+  Widget _illustration(_OnboardingPage page) {
+    return Container(
+      width: 220.0,
+      height: 220.0,
+      decoration: BoxDecoration(
+        color: page.blobColor,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: page.lottieAsset != null
+          ? Lottie.asset(
+              page.lottieAsset!,
+              width: 160.0,
+              height: 160.0,
+              fit: BoxFit.contain,
+            )
+          : Icon(page.icon, size: 96.0, color: page.iconColor),
+    );
+  }
+
+  Widget _pageContent(BuildContext context, _OnboardingPage page) {
+    final theme = FlutterFlowTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _illustration(page),
+          SizedBox(height: 40.0),
+          Text(
+            page.title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontSize: 26.0,
+              fontWeight: FontWeight.w800,
+              color: theme.primaryText,
+            ),
+          ),
+          SizedBox(height: 14.0),
+          Text(
+            page.description,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              color: theme.secondaryText,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Wraps each page's content with a subtle fade + scale that tracks how
+  /// far the page is from the currently-centered one, so swiping between
+  /// pages feels like a soft crossfade rather than a hard cut.
+  Widget _buildPage(BuildContext context, int index, _OnboardingPage page) {
+    return AnimatedBuilder(
+      animation: _pageController,
+      builder: (context, child) {
+        double currentPage = _currentPage.toDouble();
+        if (_pageController.hasClients &&
+            _pageController.position.haveDimensions) {
+          currentPage = _pageController.page ?? currentPage;
+        }
+        final distance = (currentPage - index).abs().clamp(0.0, 1.0);
+        final t = 1.0 - distance;
+        return Opacity(
+          opacity: t,
+          child: Transform.scale(
+            scale: 0.92 + 0.08 * t,
+            child: child,
+          ),
+        );
+      },
+      child: _pageContent(context, page),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    context.watch<FFAppState>();
+    final theme = FlutterFlowTheme.of(context);
 
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-        body: SafeArea(
-          top: true,
-          child: Stack(
-            children: [
-              Container(
-                width: MediaQuery.sizeOf(context).width * 1.0,
-                height: MediaQuery.sizeOf(context).height * 1.0,
-                decoration: BoxDecoration(),
-                child: Align(
-                  alignment: AlignmentDirectional(0.0, -0.7),
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: FFAppState().welcomeCircleDiameter.toDouble(),
-                    height: FFAppState().welcomeCircleDiameter.toDouble(),
-                    decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).primaryBackground,
-                      shape: BoxShape.circle,
+    if (_showOnboarding != true) {
+      // Either still checking the stored preference, or already redirecting
+      // to the dashboard - nothing meaningful to render either way.
+      return Scaffold(backgroundColor: theme.primaryBackground);
+    }
+
+    final pages = _pages(theme);
+    final isLastPage = _currentPage == pages.length - 1;
+
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: theme.primaryBackground,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 480.0),
+            child: Stack(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    SizedBox(height: 52.0),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: pages.length,
+                        itemBuilder: (context, index) =>
+                            _buildPage(context, index, pages[index]),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 20.0),
-                      child: Container(
-                        width: double.infinity,
-                        height: MediaQuery.sizeOf(context).height * 0.6,
-                        child: Stack(
-                          children: [
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 50.0),
-                              child: PageView(
-                                controller: _model.pageViewController ??=
-                                    PageController(initialPage: 0),
-                                scrollDirection: Axis.horizontal,
-                                children: [
-                                  Column(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        child: Padding(
-                                          padding:
-                                              EdgeInsetsDirectional.fromSTEB(
-                                                  0.0, 0.0, 0.0, 40.0),
-                                          child: Container(
-                                            width: MediaQuery.sizeOf(context)
-                                                    .width *
-                                                1.0,
-                                            decoration: BoxDecoration(),
-                                            child: Container(
-                                              width: 100.0,
-                                              height: 100.0,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryBackground,
-                                              ),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.0),
-                                                child: Image.asset(
-                                                  'logo/himpawidLogo.png',
-                                                  width: 200.0,
-                                                  height: 200.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width:
-                                            MediaQuery.sizeOf(context).width *
-                                                1.0,
-                                        height: 100.0,
-                                        decoration: BoxDecoration(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryBackground,
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.max,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Every breath matters',
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .headlineMedium
-                                                  .override(
-                                                    font: GoogleFonts.manrope(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .headlineMedium
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .secondary,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .headlineMedium
-                                                            .fontStyle,
-                                                  ),
-                                            ).animateOnPageLoad(animationsMap[
-                                                'textOnPageLoadAnimation1']!),
-                                            Padding(
-                                              padding: EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      MediaQuery.sizeOf(context).width * 0.2, 0.0, MediaQuery.sizeOf(context).width * 0.2, 0.0),
-                                              child: Text(
-                                                'Polluted air can weaken your lungs. We help you stay aware and protected',
-                                                textAlign: TextAlign.center,
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .titleMedium
-                                                    .override(
-                                                      font: GoogleFonts.manrope(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleMedium
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      fontSize: 13.0,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontStyle,
-                                                    ),
-                                              ).animateOnPageLoad(animationsMap[
-                                                  'textOnPageLoadAnimation2']!),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Column(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        child: Padding(
-                                          padding:
-                                              EdgeInsetsDirectional.fromSTEB(
-                                                  0.0, 0.0, 0.0, 40.0),
-                                          child: Container(
-                                            width: MediaQuery.sizeOf(context)
-                                                    .width *
-                                                1.0,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.rectangle,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width:
-                                            MediaQuery.sizeOf(context).width *
-                                                1.0,
-                                        height: 100.0,
-                                        decoration: BoxDecoration(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryBackground,
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.max,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'custom reminders',
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .headlineMedium
-                                                  .override(
-                                                    font: GoogleFonts.manrope(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .headlineMedium
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .secondary,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .headlineMedium
-                                                            .fontStyle,
-                                                  ),
-                                            ).animateOnPageLoad(animationsMap[
-                                                'textOnPageLoadAnimation3']!),
-                                            Padding(
-                                              padding: EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      MediaQuery.sizeOf(context).width * 0.2, 0.0, MediaQuery.sizeOf(context).width * 0.2, 0.0),
-                                              child: Text(
-                                                'stay on track with\ntailored alerts',
-                                                textAlign: TextAlign.center,
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .titleMedium
-                                                    .override(
-                                                      font: GoogleFonts.manrope(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleMedium
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontStyle,
-                                                    ),
-                                              ).animateOnPageLoad(animationsMap[
-                                                  'textOnPageLoadAnimation4']!),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Align(
-                              alignment: AlignmentDirectional(0.0, 1.0),
-                              child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 10.0),
-                                child:
-                                    smooth_page_indicator.SmoothPageIndicator(
-                                  controller: _model.pageViewController ??=
-                                      PageController(initialPage: 0),
-                                  count: 2,
-                                  axisDirection: Axis.horizontal,
-                                  onDotClicked: (i) async {
-                                    await _model.pageViewController!
-                                        .animateToPage(
-                                      i,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.ease,
-                                    );
-                                    safeSetState(() {});
-                                  },
-                                  effect:
-                                      smooth_page_indicator.ExpandingDotsEffect(
-                                    expansionFactor: 2.0,
-                                    spacing: 8.0,
-                                    radius: 16.0,
-                                    dotWidth: 16.0,
-                                    dotHeight: 8.0,
-                                    dotColor:
-                                        FlutterFlowTheme.of(context).accent2,
-                                    activeDotColor:
-                                        FlutterFlowTheme.of(context).primary,
-                                    paintStyle: PaintingStyle.fill,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                    SmoothPageIndicator(
+                      controller: _pageController,
+                      count: pages.length,
+                      onDotClicked: (i) => _pageController.animateToPage(
+                        i,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      ),
+                      effect: ExpandingDotsEffect(
+                        dotWidth: 8.0,
+                        dotHeight: 8.0,
+                        spacing: 8.0,
+                        radius: 16.0,
+                        dotColor: theme.alternate,
+                        activeDotColor: theme.slateDeep,
+                      ),
+                    ),
+                    SizedBox(height: 24.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: FFButtonWidget(
+                        onPressed: isLastPage
+                            ? _finishOnboarding
+                            : () => _nextPage(pages.length),
+                        text: isLastPage ? 'Get Started' : 'Next',
+                        options: FFButtonOptions(
+                          width: double.infinity,
+                          height: 56.0,
+                          color: theme.lime,
+                          textStyle: GoogleFonts.manrope(
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w800,
+                            color: theme.raisinBlack,
+                          ),
+                          elevation: 0.0,
+                          borderSide: BorderSide(
+                            color: Colors.transparent,
+                            width: 0.0,
+                          ),
+                          borderRadius: BorderRadius.circular(28.0),
                         ),
-                      ).animateOnActionTrigger(
-                        animationsMap['pageViewOnActionTriggerAnimation']!,
+                      ),
+                    ),
+                    SizedBox(height: 32.0),
+                  ],
+                ),
+                if (!isLastPage)
+                  PositionedDirectional(
+                    top: 4.0,
+                    end: 16.0,
+                    child: InkWell(
+                      splashColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onTap: _finishOnboarding,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text(
+                          'Skip',
+                          style: GoogleFonts.manrope(
+                            fontSize: 14.0,
+                            fontWeight: FontWeight.w700,
+                            color: theme.secondaryText,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  Padding(
-                    padding:
-                        EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 40.0),
-                    child: Stack(
-                      children: [
-                        if (_model.pageViewCurrentIndex != 2)
-                          Align(
-                            alignment: AlignmentDirectional(0.0, 0.0),
-                            child: FFButtonWidget(
-                              onPressed: () async {
-                                context.pushNamed(LocationWidget.routeName);
-                              },
-                              text: 'Next',
-                              options: FFButtonOptions(
-                                width: 150.0,
-                                height: 70.0,
-                                padding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 0.0),
-                                iconPadding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 0.0),
-                                color: FlutterFlowTheme.of(context).primary,
-                                textStyle: FlutterFlowTheme.of(context)
-                                    .titleSmall
-                                    .override(
-                                      font: GoogleFonts.manrope(
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                      color: FlutterFlowTheme.of(context).white,
-                                      fontSize: 14.0,
-                                      letterSpacing: 0.0,
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.0,
-                                ),
-                                borderRadius: BorderRadius.circular(40.0),
-                              ),
-                            ),
-                          ),
-                        if (_model.pageViewCurrentIndex == 2)
-                          Align(
-                            alignment: AlignmentDirectional(0.0, 0.0),
-                            child: FFButtonWidget(
-                              onPressed: () async {
-                                if (animationsMap[
-                                        'pageViewOnActionTriggerAnimation'] !=
-                                    null) {
-                                  animationsMap[
-                                          'pageViewOnActionTriggerAnimation']!
-                                      .controller
-                                      .forward(from: 0.0);
-                                }
-
-                                context.goNamed(
-                                  GettingStartedWidget.routeName,
-                                  extra: <String, dynamic>{
-                                    kTransitionInfoKey: TransitionInfo(
-                                      hasTransition: true,
-                                      transitionType: PageTransitionType.fade,
-                                      duration: Duration(milliseconds: 600),
-                                    ),
-                                  },
-                                );
-                              },
-                              text: 'Start',
-                              options: FFButtonOptions(
-                                width: MediaQuery.sizeOf(context).width * 0.4,
-                                height: 70.0,
-                                padding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 0.0),
-                                iconPadding: EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 0.0),
-                                color: FlutterFlowTheme.of(context).primary,
-                                textStyle: FlutterFlowTheme.of(context)
-                                    .titleSmall
-                                    .override(
-                                      font: GoogleFonts.manrope(
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                      color: FlutterFlowTheme.of(context).white,
-                                      fontSize: 14.0,
-                                      letterSpacing: 0.0,
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.0,
-                                ),
-                                borderRadius: BorderRadius.circular(40.0),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

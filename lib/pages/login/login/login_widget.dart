@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/flutter_flow/onboarding_util.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -117,6 +118,19 @@ class _LoginWidgetState extends State<LoginWidget>
     _model.dispose();
 
     super.dispose();
+  }
+
+  /// Routes to the onboarding carousel on this device's first-ever
+  /// successful sign-in, or straight to the dashboard on every login after
+  /// that - checked via a local SharedPreferences flag (see
+  /// onboarding_util.dart), not tied to which account signed in.
+  Future<void> _navigateAfterAuth() async {
+    final seenOnboarding = await hasSeenOnboarding();
+    if (!context.mounted) return;
+    context.goNamedAuth(
+      seenOnboarding ? HomePageWidget.routeName : WelcomeWidget.routeName,
+      context.mounted,
+    );
   }
 
   @override
@@ -678,10 +692,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                         return;
                                                       }
 
-                                                      context.goNamedAuth(
-                                                          FirstSlideWidget
-                                                              .routeName,
-                                                          context.mounted);
+                                                      await _navigateAfterAuth();
                                                     },
                                                     text: 'Sign In',
                                                     options: FFButtonOptions(
@@ -924,11 +935,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                                   return;
                                                                 }
 
-                                                                context.goNamedAuth(
-                                                                    FirstSlideWidget
-                                                                        .routeName,
-                                                                    context
-                                                                        .mounted);
+                                                                await _navigateAfterAuth();
                                                               },
                                                               text:
                                                                   'Continue with Google',
@@ -1022,11 +1029,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                                         return;
                                                                       }
 
-                                                                      context.goNamedAuth(
-                                                                          FirstSlideWidget
-                                                                              .routeName,
-                                                                          context
-                                                                              .mounted);
+                                                                      await _navigateAfterAuth();
                                                                     },
                                                                     text:
                                                                         'Continue with Apple',
@@ -1662,10 +1665,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                         return;
                                                       }
 
-                                                      context.goNamedAuth(
-                                                          FirstSlideWidget
-                                                              .routeName,
-                                                          context.mounted);
+                                                      await _navigateAfterAuth();
                                                     },
                                                     text: 'Create Account',
                                                     options: FFButtonOptions(
@@ -1834,11 +1834,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                                   return;
                                                                 }
 
-                                                                context.goNamedAuth(
-                                                                    FirstSlideWidget
-                                                                        .routeName,
-                                                                    context
-                                                                        .mounted);
+                                                                await _navigateAfterAuth();
                                                               },
                                                               text:
                                                                   'Continue with Google',
@@ -1932,11 +1928,7 @@ class _LoginWidgetState extends State<LoginWidget>
                                                                         return;
                                                                       }
 
-                                                                      context.goNamedAuth(
-                                                                          FirstSlideWidget
-                                                                              .routeName,
-                                                                          context
-                                                                              .mounted);
+                                                                      await _navigateAfterAuth();
                                                                     },
                                                                     text:
                                                                         'Continue with Apple',
