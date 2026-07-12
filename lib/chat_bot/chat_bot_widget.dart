@@ -2,6 +2,9 @@ import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/custom_code/actions/index.dart' as actions;
+import '/custom_code/actions/get_location_and_air_quality.dart'
+    show epaCategory;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,25 +70,68 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
   }
 
   // ---------------------------------------------------------------------
-  // Bot logic: answers based on live app state (Google Air Quality data).
-  // Universal AQI: 0-100, higher = cleaner air.
+  // Bot logic: answers based on live air quality data (US EPA AQI,
+  // 0-500, HIGHER = WORSE - see get_location_and_air_quality.dart).
   // ---------------------------------------------------------------------
-  String _botReply(String input) {
-    final q = input.toLowerCase();
-    final aqi = FFAppState().aqiValue;
-    final category = FFAppState().healthRisk;
-    final location = FFAppState().currentLocation;
-    final hasData = aqi > 0;
 
-    String aqiSummary() {
+  /// Pulls a place name out of "... in/at/near <place>" so a question like
+  /// "what's the aqi in manila?" looks up Manila specifically instead of
+  /// silently answering with the device's own current location - which is
+  /// what made asking about two different cities return the same answer.
+  String? _extractCityQuery(String lowercasedQuestion) {
+    final match = RegExp(r'\b(?:in|at|near)\s+([a-z][a-z\s\-]{1,40}?)[\?\.!,]*$')
+        .firstMatch(lowercasedQuestion.trim());
+    final city = match?.group(1)?.trim();
+    return (city == null || city.isEmpty) ? null : city;
+  }
+
+  /// Resolves the AQI/location to answer with: if the question named a
+  /// specific place, geocode it and fetch that place's real AQI; otherwise
+  /// fall back to the device's current location (the previous behavior).
+  /// A failed or unmatched place lookup falls back the same way, so a
+  /// nonsense phrase never produces a wrong answer - just the same "no
+  /// data" or device-location response as before.
+  Future<({int aqi, String location, bool hasData})> _resolveAqiContext(
+      String lowercasedQuestion) async {
+    final cityQuery = _extractCityQuery(lowercasedQuestion);
+    if (cityQuery != null) {
+      try {
+        final results = await actions.searchLocation(cityQuery);
+        if (results.isNotEmpty) {
+          final place = results.first;
+          final aqi = await actions.fetchAqiForCoordinates(
+              place.latitude, place.longitude);
+          if (aqi > 0) {
+            return (aqi: aqi, location: place.name, hasData: true);
+          }
+        }
+      } catch (e) {
+        print('[CHATBOT] City lookup for "$cityQuery" failed: $e');
+        // fall through to device location below
+      }
+    }
+
+    final aqi = FFAppState().aqiValue;
+    return (
+      aqi: aqi,
+      location: FFAppState().currentLocation,
+      hasData: aqi > 0,
+    );
+  }
+
+  Future<String> _botReply(String input) async {
+    final q = input.toLowerCase();
+
+    String aqiSummary(int aqi, String location, bool hasData) {
       if (!hasData) {
         return 'I don\'t have air quality data yet. Open the home screen '
             'and allow location access so I can check the air around you.';
       }
+      final category = epaCategory(aqi);
       return 'The air quality index in '
-          '${location.isNotEmpty ? location : 'your area'} is $aqi out of '
-          '100 ($category). Remember: on this scale, higher means cleaner '
-          'air.';
+          '${location.isNotEmpty ? location : 'your area'} is $aqi '
+          '($category). Remember: on this scale, HIGHER means WORSE air '
+          'quality.';
     }
 
     String pollutant(String key, String name, String desc) {
@@ -105,7 +151,8 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
 
     if (q.contains('aqi') || q.contains('air quality') ||
         q.contains('how is the air') || q.contains('air now')) {
-      return aqiSummary();
+      final ctx = await _resolveAqiContext(q);
+      return aqiSummary(ctx.aqi, ctx.location, ctx.hasData);
     }
 
     if (q.contains('pm2.5') || q.contains('pm 2.5') || q.contains('pm25')) {
@@ -146,41 +193,48 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     if (q.contains('exercise') || q.contains('run') || q.contains('jog') ||
         q.contains('workout') || q.contains('outside') ||
         q.contains('outdoor')) {
-      if (!hasData) return aqiSummary();
-      if (aqi >= 60) {
-        return 'With an AQI of $aqi ($category), the air is clean - it\'s a '
-            'great time for outdoor exercise. Enjoy!';
-      } else if (aqi >= 40) {
-        return 'The AQI is $aqi ($category). Light outdoor activity is fine '
-            'for most people, but if you\'re sensitive to air pollution, '
-            'consider shortening intense workouts.';
+      final ctx = await _resolveAqiContext(q);
+      if (!ctx.hasData) return aqiSummary(ctx.aqi, ctx.location, ctx.hasData);
+      final category = epaCategory(ctx.aqi);
+      if (ctx.aqi <= 50) {
+        return 'With an AQI of ${ctx.aqi} ($category), the air is clean - '
+            'it\'s a great time for outdoor exercise. Enjoy!';
+      } else if (ctx.aqi <= 100) {
+        return 'The AQI is ${ctx.aqi} ($category). Light outdoor activity '
+            'is fine for most people, but if you\'re sensitive to air '
+            'pollution, consider shortening intense workouts.';
       }
-      return 'The AQI is $aqi ($category), which means the air is quite '
-          'polluted right now. I\'d recommend exercising indoors today.';
+      return 'The AQI is ${ctx.aqi} ($category), which means the air is '
+          'quite polluted right now. I\'d recommend exercising indoors '
+          'today.';
     }
 
     if (q.contains('mask')) {
-      if (!hasData) return aqiSummary();
-      if (aqi >= 60) {
-        return 'The air is clean right now (AQI $aqi) - no mask needed for '
-            'air quality reasons.';
-      } else if (aqi >= 40) {
-        return 'AQI is $aqi ($category). A mask isn\'t essential, but '
+      final ctx = await _resolveAqiContext(q);
+      if (!ctx.hasData) return aqiSummary(ctx.aqi, ctx.location, ctx.hasData);
+      final category = epaCategory(ctx.aqi);
+      if (ctx.aqi <= 50) {
+        return 'The air is clean right now (AQI ${ctx.aqi}) - no mask '
+            'needed for air quality reasons.';
+      } else if (ctx.aqi <= 100) {
+        return 'AQI is ${ctx.aqi} ($category). A mask isn\'t essential, but '
             'sensitive individuals may want one for longer time outdoors.';
       }
-      return 'With AQI at $aqi ($category), a well-fitted N95/KN95 mask is '
-          'a good idea if you need to spend time outside.';
+      return 'With AQI at ${ctx.aqi} ($category), a well-fitted N95/KN95 '
+          'mask is a good idea if you need to spend time outside.';
     }
 
     if (q.contains('window')) {
-      if (!hasData) return aqiSummary();
-      if (aqi >= 60) {
-        return 'The air is clean (AQI $aqi) - a great time to ventilate '
-            'and open the windows.';
+      final ctx = await _resolveAqiContext(q);
+      if (!ctx.hasData) return aqiSummary(ctx.aqi, ctx.location, ctx.hasData);
+      final category = epaCategory(ctx.aqi);
+      if (ctx.aqi <= 50) {
+        return 'The air is clean (AQI ${ctx.aqi}) - a great time to '
+            'ventilate and open the windows.';
       }
-      return 'AQI is $aqi ($category). I\'d keep windows closed for now and '
-          'ventilate later when the air improves - check the forecast on '
-          'the chart screen.';
+      return 'AQI is ${ctx.aqi} ($category). I\'d keep windows closed for '
+          'now and ventilate later when the air improves - check the '
+          'forecast on the chart screen.';
     }
 
     if (q.contains('forecast') || q.contains('later') ||
@@ -198,12 +252,14 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
 
     if (q.contains('scale') || q.contains('mean') || q.contains('what is aqi')
         || q.contains('index')) {
-      return 'Himpawid uses Google\'s Universal AQI: a 0-100 scale where '
-          'HIGHER is BETTER. 80-100 is excellent, 60-79 good, 40-59 '
-          'moderate, 20-39 low, and below 20 poor air quality.';
+      return 'Himpawid uses the US EPA Air Quality Index: a 0-500 scale '
+          'where HIGHER means WORSE air. 0-50 is Good, 51-100 Moderate, '
+          '101-150 Unhealthy for Sensitive Groups, 151-200 Unhealthy, '
+          '201-300 Very Unhealthy, and 301+ is Hazardous.';
     }
 
     if (q.contains('where') || q.contains('location')) {
+      final location = FFAppState().currentLocation;
       return location.isNotEmpty
           ? 'Your readings are for $location, based on your device '
               'location.'
@@ -217,7 +273,8 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
 
     return 'I can help with air quality questions - try asking "What\'s the '
         'AQI right now?", "What is PM2.5?", "Should I wear a mask?", or '
-        '"Is it safe to exercise outside?"';
+        '"Is it safe to exercise outside?" You can also ask about a '
+        'specific place, like "What\'s the AQI in Manila?"';
   }
 
   Future<void> _sendMessage([String? preset]) async {
@@ -231,12 +288,19 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     _model.textController?.clear();
     _scrollToBottom();
 
-    // Small delay so the typing indicator feels natural.
-    await Future.delayed(const Duration(milliseconds: 650));
+    // Run the reply lookup and a minimum typing-indicator delay together,
+    // so a fast (cached/no-network) reply still feels natural, but a
+    // slower one (e.g. geocoding a named city) isn't held up any longer
+    // than it actually takes.
+    final results = await Future.wait([
+      _botReply(text),
+      Future.delayed(const Duration(milliseconds: 650)),
+    ]);
+    final reply = results[0] as String;
 
     if (!mounted) return;
     setState(() {
-      _messages.add(_ChatMessage(_botReply(text), false));
+      _messages.add(_ChatMessage(reply, false));
       _botTyping = false;
     });
     _scrollToBottom();

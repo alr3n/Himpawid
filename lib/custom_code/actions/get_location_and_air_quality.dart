@@ -9,24 +9,30 @@ import 'package:flutter/material.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '/flutter_flow/flutter_flow_map.dart' show kMapTilerApiKey;
 import 'generate_notification.dart';
-
-// Google Maps Platform key — used only for reverse geocoding (lat/lng ->
-// city name). Air quality itself comes from OpenWeather (see below): the
-// Google Air Quality API requires a billing-enabled Cloud project, which
-// this app's project doesn't have, while Geocoding works on the free tier.
-String get kGoogleApiKey => dotenv.env['GOOGLE_GEOCODING_API_KEY'] ?? '';
 
 // OpenWeather key — used for all air quality data (current + forecast).
 String get kOpenWeatherApiKey => dotenv.env['OPENWEATHER_API_KEY'] ?? '';
 
+/// Fetches the device's GPS location, reverse-geocodes it to a city name,
+/// and fetches air quality for it - the entry point called on every page
+/// that needs "AQI at my current location".
+///
+/// Every step logs its outcome (`[AQI FLOW]` prefix) so a failure is
+/// diagnosable from the console instead of just silently leaving the UI
+/// on a default value.
 Future<void> getLocationAndAirQuality() async {
+  print('[AQI FLOW] getLocationAndAirQuality() started');
+
   // Get location first
   try {
     // Check if location service is enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    print('[AQI FLOW] Location service enabled: $serviceEnabled');
     if (!serviceEnabled) {
       FFAppState().update(() {
         FFAppState().currentLocation = 'Location services disabled';
@@ -36,8 +42,10 @@ Future<void> getLocationAndAirQuality() async {
 
     // Check permissions
     LocationPermission permission = await Geolocator.checkPermission();
+    print('[AQI FLOW] Location permission: $permission');
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+      print('[AQI FLOW] Location permission after request: $permission');
       if (permission == LocationPermission.denied) {
         FFAppState().update(() {
           FFAppState().currentLocation = 'Location permission denied';
@@ -53,10 +61,18 @@ Future<void> getLocationAndAirQuality() async {
       return;
     }
 
-    // Get current position
+    // Get current position. A time limit is essential here: on web,
+    // Geolocator.getCurrentPosition() can hang indefinitely (never
+    // resolving, never throwing) if the browser's permission prompt is
+    // ignored or location is otherwise stuck - without a timeout, that
+    // silently blocks every await chained after this call forever
+    // (AQI fetch, forecast, dashboard previews, notifications, etc.),
+    // which looks exactly like "stuck on loading" with no error at all.
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.medium,
+      timeLimit: const Duration(seconds: 15),
     );
+    print('[AQI FLOW] GPS position: ${position.latitude}, ${position.longitude}');
 
     // Update app state with coordinates
     FFAppState().update(() {
@@ -64,45 +80,29 @@ Future<void> getLocationAndAirQuality() async {
       FFAppState().longitude = position.longitude;
     });
 
-    // Get city name using Google Geocoding API
-    final geocodingUrl =
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$kGoogleApiKey';
-
-    try {
-      final geocodingResponse = await http.get(Uri.parse(geocodingUrl));
-      if (geocodingResponse.statusCode == 200) {
-        final geocodingData = json.decode(geocodingResponse.body);
-        if (geocodingData['results'] != null &&
-            geocodingData['results'].isNotEmpty) {
-          String cityName = 'Unknown Location';
-          for (var result in geocodingData['results']) {
-            for (var component in result['address_components']) {
-              if (component['types'].contains('locality')) {
-                cityName = component['long_name'];
-                break;
-              }
-            }
-            if (cityName != 'Unknown Location') break;
-          }
-          FFAppState().update(() {
-            FFAppState().currentLocation = cityName;
-          });
-        }
-      }
-    } catch (e) {
-      FFAppState().update(() {
-        FFAppState().currentLocation = 'Error getting location';
-      });
-    }
-  } catch (e) {
+    final cityName =
+        await reverseGeocodeCityName(position.latitude, position.longitude);
     FFAppState().update(() {
-      FFAppState().currentLocation = 'Error getting location';
+      FFAppState().currentLocation = cityName;
+    });
+  } catch (e) {
+    print('[AQI FLOW] GPS fetch failed: $e');
+    FFAppState().update(() {
+      FFAppState().currentLocation = e is TimeoutException
+          ? 'Location request timed out'
+          : 'Error getting location';
     });
   }
 
   // Then get air quality data from OpenWeather
   if (FFAppState().latitude != 0.0 && FFAppState().longitude != 0.0) {
-    await fetchAirQuality(FFAppState().latitude, FFAppState().longitude);
+    print('[AQI FLOW] Fetching AQI for '
+        '${FFAppState().latitude}, ${FFAppState().longitude}');
+    final success =
+        await fetchAirQuality(FFAppState().latitude, FFAppState().longitude);
+    print('[AQI FLOW] fetchAirQuality succeeded: $success');
+  } else {
+    print('[AQI FLOW] Skipping AQI fetch - no location available');
   }
 
   // Update current date and time
@@ -110,6 +110,65 @@ Future<void> getLocationAndAirQuality() async {
     FFAppState().currentDateTime =
         DateFormat('MMMM d, y, h:mm a').format(DateTime.now());
   });
+
+  print('[AQI FLOW] getLocationAndAirQuality() finished');
+}
+
+/// Reverse-geocodes [latitude]/[longitude] to a city/municipality name via
+/// MapTiler - shared by the device's own location flow above and anything
+/// else that needs a place name for arbitrary coordinates (e.g. the AQI map
+/// showing the name of wherever the user has panned to).
+///
+/// Never throws - returns a human-readable fallback string on any failure,
+/// since callers use this purely for display.
+Future<String> reverseGeocodeCityName(double latitude, double longitude) async {
+  final geocodingUrl = 'https://api.maptiler.com/geocoding/'
+      '$longitude,$latitude.json?key=$kMapTilerApiKey';
+
+  try {
+    final response = await http.get(Uri.parse(geocodingUrl));
+    print('[AQI FLOW] Reverse geocoding HTTP ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final features = data['features'] as List<dynamic>? ?? [];
+      return _cityNameFromFeatures(features);
+    }
+
+    // A real API failure (bad key, quota, etc.), not "no results" -
+    // surface the actual reason instead of a generic message so it's
+    // diagnosable.
+    print('[AQI FLOW] Reverse geocoding failed: ${response.body.trim()}');
+    return 'Location name unavailable';
+  } catch (e) {
+    print('[AQI FLOW] Reverse geocoding threw: $e');
+    return 'Error getting location';
+  }
+}
+
+/// Picks a city/municipality-level name out of a MapTiler reverse-geocoding
+/// `features` list. Each feature carries a `context` array of its parent
+/// administrative areas (suburb, municipality, region, country, ...) - the
+/// entry whose `id` starts with `municipality.` is MapTiler/OSM's city-level
+/// equivalent to Google's old `locality` address component. Falls back to
+/// the top result's own name if no such entry is present (e.g. rural areas).
+String _cityNameFromFeatures(List<dynamic> features) {
+  if (features.isEmpty) return 'Unknown Location';
+
+  for (final f in features) {
+    final feature = f as Map<String, dynamic>;
+    final context = feature['context'] as List<dynamic>? ?? [];
+    for (final c in context) {
+      final entry = c as Map<String, dynamic>;
+      final id = entry['id'] as String? ?? '';
+      if (id.startsWith('municipality.')) {
+        return entry['text'] as String? ?? 'Unknown Location';
+      }
+    }
+  }
+
+  final firstFeature = features.first as Map<String, dynamic>;
+  return firstFeature['text'] as String? ?? 'Unknown Location';
 }
 
 /// Fetches the current air quality for [latitude]/[longitude] from
@@ -131,9 +190,11 @@ Future<void> getLocationAndAirQuality() async {
 Future<bool> fetchAirQuality(double latitude, double longitude) async {
   final url = Uri.parse(
       'https://api.openweathermap.org/data/2.5/air_pollution?lat=$latitude&lon=$longitude&appid=$kOpenWeatherApiKey');
+  print('[AQI FLOW] fetchAirQuality: GET $url');
 
   try {
     final response = await http.get(url);
+    print('[AQI FLOW] fetchAirQuality: HTTP ${response.statusCode}');
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -154,6 +215,7 @@ Future<bool> fetchAirQuality(double latitude, double longitude) async {
     final aqi = epaAqiFromPm25(pm25);
     final category = epaCategory(aqi);
     final gaugeColor = epaColor(aqi);
+    print('[AQI FLOW] fetchAirQuality: pm2.5=$pm25 -> AQI=$aqi ($category)');
 
     // Gauge fill: EPA AQI is "higher = worse", capped at 300 (top of "Very
     // Unhealthy") for display purposes — anything beyond just shows full.
@@ -162,6 +224,7 @@ Future<bool> fetchAirQuality(double latitude, double longitude) async {
 
     final pollutantsMap = _applyOpenWeatherPollutants(components);
     pollutantsMap['AQI'] = aqi.toString();
+    print('[AQI FLOW] fetchAirQuality: pollutants=$pollutantsMap');
 
     FFAppState().update(() {
       FFAppState().aqiError = '';
@@ -172,6 +235,8 @@ Future<bool> fetchAirQuality(double latitude, double longitude) async {
       FFAppState().gaugeColor = gaugeColor;
       FFAppState().pollutants = pollutantsMap;
     });
+    print('[AQI FLOW] fetchAirQuality: FFAppState updated '
+        '(aqiValue=${FFAppState().aqiValue}, healthRisk=${FFAppState().healthRisk})');
 
     await generateNotification();
     return true;

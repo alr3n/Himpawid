@@ -7,136 +7,134 @@ import 'package:flutter/material.dart';
 // Begin custom action code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
+import 'package:latlong2/latlong.dart' as latlong2;
+import '/flutter_flow/flutter_flow_map.dart' show MapImageOverlay;
 import 'dart:ui' as ui;
-import 'dart:math' as math;
 import 'dart:typed_data';
 
-Future<gmaps.TileOverlay> createAQIHeatmapOverlay(List<Map<String, dynamic>> aqiDataPoints) async {
-  // Create custom tile provider for AQI heatmap
-  final tileProvider = _AQITileProvider(aqiDataPoints);
+/// Renders [aqiDataPoints] (each `{latitude, longitude, aqi}`) as a smooth
+/// color wash across the area they were sampled from - interpolated between
+/// the sampled points (inverse-distance weighting) rather than discrete
+/// markers, so the entire visible area is tinted by how bad the air is
+/// there. Rendered once as a single geo-bounded image (`MapImageOverlay`)
+/// rather than Google Maps' per-tile `TileOverlay` scheme, since
+/// `flutter_map`'s overlay layer works directly off lat/lng bounds.
+///
+/// Returns `null` if there's nothing to render (caller should show a
+/// "no data yet" state, not fake coloring).
+Future<MapImageOverlay?> createAQIHeatmapOverlay(
+    List<Map<String, dynamic>> aqiDataPoints) async {
+  if (aqiDataPoints.isEmpty) return null;
 
-  // Create tile overlay
-  final tileOverlay = gmaps.TileOverlay(
-    tileOverlayId: const gmaps.TileOverlayId('aqi_heatmap'),
-    tileProvider: tileProvider,
-    transparency: 0.4, // Adjust transparency for overlay effect
+  const int resolution = 512; // pixels, square canvas
+  const int gridSteps = 32; // sample cells per axis
+  const double cellSize = resolution / gridSteps;
+  const int washAlpha = 150; // ~59% opacity wash
+
+  double minLat = double.infinity, maxLat = -double.infinity;
+  double minLon = double.infinity, maxLon = -double.infinity;
+  for (final p in aqiDataPoints) {
+    final lat = p['latitude'] as double;
+    final lon = p['longitude'] as double;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+  }
+
+  // Pad the sampled bounding box so the wash extends past the outermost
+  // sample points (softening the edge via IDW extrapolation) instead of
+  // cutting off sharply right at them - matches the grid spacing used in
+  // fetch_heatmap_aqi.dart's sampling grid (0.03deg), so the rendered wash
+  // is wide enough to cover what's actually visible on screen rather than
+  // appearing as a small patch in the middle of the map.
+  const double padding = 0.03;
+  minLat -= padding;
+  maxLat += padding;
+  minLon -= padding;
+  maxLon += padding;
+
+  final ui.PictureRecorder recorder = ui.PictureRecorder();
+  final ui.Canvas canvas = ui.Canvas(recorder);
+
+  for (int gx = 0; gx < gridSteps; gx++) {
+    for (int gy = 0; gy < gridSteps; gy++) {
+      final lon = minLon + ((gx + 0.5) / gridSteps) * (maxLon - minLon);
+      // Image y grows downward while latitude grows upward (north), so
+      // row 0 (top of the image) must map to maxLat.
+      final lat = maxLat - ((gy + 0.5) / gridSteps) * (maxLat - minLat);
+
+      final aqi = _interpolateAqi(lat, lon, aqiDataPoints);
+      final color = _getAQIColor(aqi).withAlpha(washAlpha);
+
+      canvas.drawRect(
+        ui.Rect.fromLTWH(
+          gx * cellSize,
+          gy * cellSize,
+          cellSize + 1.0, // slight overlap avoids hairline seams
+          cellSize + 1.0,
+        ),
+        ui.Paint()..color = color,
+      );
+    }
+  }
+
+  final ui.Picture picture = recorder.endRecording();
+  final ui.Image image = await picture.toImage(resolution, resolution);
+  final ByteData? byteData =
+      await image.toByteData(format: ui.ImageByteFormat.png);
+  if (byteData == null) return null;
+
+  return MapImageOverlay(
+    bounds: LatLngBounds(
+      latlong2.LatLng(maxLat, minLon), // north-west corner
+      latlong2.LatLng(minLat, maxLon), // south-east corner
+    ),
+    image: MemoryImage(byteData.buffer.asUint8List()),
   );
-
-  return tileOverlay;
 }
 
-class _AQITileProvider extends gmaps.TileProvider {
-  final List<Map<String, dynamic>> aqiDataPoints;
+/// Inverse-distance-weighted AQI estimate at [lat]/[lon] from the sampled
+/// [points] - closer samples have more influence, giving a smooth blend
+/// between grid points instead of hard boundaries.
+int _interpolateAqi(
+    double lat, double lon, List<Map<String, dynamic>> points) {
+  double weightedSum = 0.0;
+  double weightSum = 0.0;
 
-  _AQITileProvider(this.aqiDataPoints);
+  for (final point in points) {
+    final plat = point['latitude'] as double;
+    final plon = point['longitude'] as double;
+    final paqi = (point['aqi'] as int).toDouble();
 
-  @override
-  Future<gmaps.Tile> getTile(int x, int y, int? zoom) async {
-    try {
-      // Create a 256x256 image for the tile
-      final ui.PictureRecorder recorder = ui.PictureRecorder();
-      final ui.Canvas canvas = ui.Canvas(recorder);
-      final ui.Size size = ui.Size(256.0, 256.0);
+    final dLat = lat - plat;
+    final dLon = lon - plon;
+    final distSq = dLat * dLat + dLon * dLon;
 
-      // Fill with transparent background
-      final ui.Paint backgroundPaint = ui.Paint()..color = ui.Color(0x00000000);
-      canvas.drawRect(ui.Rect.fromLTWH(0, 0, size.width, size.height), backgroundPaint);
+    if (distSq < 1e-12) return paqi.round();
 
-      // Convert tile coordinates to lat/lng bounds
-      final bounds = _getTileBounds(x, y, zoom!);
-
-      // Draw heatmap points within this tile
-      for (final point in aqiDataPoints) {
-        final lat = point['latitude'] as double;
-        final lng = point['longitude'] as double;
-        final aqi = point['aqi'] as int;
-
-        // Check if point is within tile bounds
-        if (lat >= bounds['south']! && lat <= bounds['north']! &&
-            lng >= bounds['west']! && lng <= bounds['east']!) {
-
-          // Convert lat/lng to pixel coordinates within tile
-          final pixelX = _lngToPixel(lng, zoom) - _lngToPixel(bounds['west']!, zoom);
-          final pixelY = _latToPixel(lat, zoom) - _latToPixel(bounds['north']!, zoom);
-
-          // Get color based on AQI value
-          final color = _getAQIColor(aqi);
-
-          // Draw heatmap point
-          final ui.Paint paint = ui.Paint()
-            ..color = color
-            ..style = ui.PaintingStyle.fill;
-
-          // Draw circle with radius based on zoom level
-          final radius = math.max(5.0, 20.0 / math.pow(2, zoom - 10));
-          canvas.drawCircle(ui.Offset(pixelX, pixelY), radius, paint);
-        }
-      }
-
-      // Convert canvas to image
-      final ui.Picture picture = recorder.endRecording();
-      final ui.Image image = await picture.toImage(size.width.toInt(), size.height.toInt());
-      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-
-      if (byteData != null) {
-        return gmaps.Tile(256, 256, byteData.buffer.asUint8List());
-      } else {
-        return gmaps.Tile(256, 256, Uint8List(0));
-      }
-    } catch (e) {
-      // Return transparent tile on error
-      return gmaps.Tile(256, 256, Uint8List(0));
-    }
+    final weight = 1.0 / distSq;
+    weightedSum += weight * paqi;
+    weightSum += weight;
   }
 
-  Map<String, double> _getTileBounds(int x, int y, int zoom) {
-    final n = math.pow(2, zoom);
-    final lonMin = x / n * 360.0 - 180.0;
-    final latRadMin = math.atan((math.exp(math.pi * (1 - 2 * y / n)) - math.exp(-math.pi * (1 - 2 * y / n))) / 2);
-    final latMin = latRadMin * 180.0 / math.pi;
+  return weightSum > 0 ? (weightedSum / weightSum).round() : 0;
+}
 
-    final lonMax = (x + 1) / n * 360.0 - 180.0;
-    final latRadMax = math.atan((math.exp(math.pi * (1 - 2 * (y + 1) / n)) - math.exp(-math.pi * (1 - 2 * (y + 1) / n))) / 2);
-    final latMax = latRadMax * 180.0 / math.pi;
-
-    return {
-      'north': latMax,
-      'south': latMin,
-      'east': lonMax,
-      'west': lonMin,
-    };
-  }
-
-  double _latToPixel(double lat, int zoom) {
-    final latRad = lat * math.pi / 180.0;
-    return (1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) / 2 * 256 * math.pow(2, zoom);
-  }
-
-  double _lngToPixel(double lng, int zoom) {
-    return (lng + 180.0) / 360.0 * 256 * math.pow(2, zoom);
-  }
-
-  ui.Color _getAQIColor(int aqi) {
-    // AQI color mapping based on EPA standards
-    if (aqi <= 50) {
-      // Good - Green
-      return ui.Color(0xFF00E400);
-    } else if (aqi <= 100) {
-      // Moderate - Yellow
-      return ui.Color(0xFFFFFF00);
-    } else if (aqi <= 150) {
-      // Unhealthy for Sensitive Groups - Orange
-      return ui.Color(0xFFFF7E00);
-    } else if (aqi <= 200) {
-      // Unhealthy - Red
-      return ui.Color(0xFFFF0000);
-    } else if (aqi <= 300) {
-      // Very Unhealthy - Purple
-      return ui.Color(0xFF8F3F97);
-    } else {
-      // Hazardous - Maroon
-      return ui.Color(0xFF7E0023);
-    }
+ui.Color _getAQIColor(int aqi) {
+  // AQI color mapping based on EPA standards
+  if (aqi <= 50) {
+    return const ui.Color(0xFF00E400); // Good
+  } else if (aqi <= 100) {
+    return const ui.Color(0xFFFFFF00); // Moderate
+  } else if (aqi <= 150) {
+    return const ui.Color(0xFFFF7E00); // Unhealthy for Sensitive Groups
+  } else if (aqi <= 200) {
+    return const ui.Color(0xFFFF0000); // Unhealthy
+  } else if (aqi <= 300) {
+    return const ui.Color(0xFF8F3F97); // Very Unhealthy
+  } else {
+    return const ui.Color(0xFF7E0023); // Hazardous
   }
 }

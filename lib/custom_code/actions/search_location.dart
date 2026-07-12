@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import 'get_location_and_air_quality.dart' show kGoogleApiKey;
+import '/flutter_flow/flutter_flow_map.dart' show kMapTilerApiKey;
 
 class LocationResult {
   const LocationResult({
@@ -24,38 +24,77 @@ class LocationResult {
   final double longitude;
 }
 
-/// Searches for a place by name using Google's Geocoding API (forward
-/// geocoding: name -> coordinates) and returns up to 5 matching candidates,
-/// for adding a Favourite location.
+/// Thrown when the Geocoding API itself failed (bad key, quota, malformed
+/// request, network error) - distinct from a search that ran fine but
+/// genuinely matched nothing, so the UI can tell "try a different search"
+/// apart from "something is actually broken".
+class LocationSearchException implements Exception {
+  const LocationSearchException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// Searches for a place by name using MapTiler's Geocoding API (forward
+/// geocoding: name -> coordinates) and returns up to 5 matching
+/// candidates - cities, municipalities, provinces, or any other place the
+/// geocoder resolves - for adding a Favourite location.
+///
+/// Unlike Google's Geocoding API, MapTiler reports real failures (bad key,
+/// quota, malformed request) via the HTTP status code itself rather than
+/// a 200-with-error-in-body quirk, so a plain status-code check is
+/// sufficient here to tell a genuine zero-result search apart from the
+/// request having failed outright.
 Future<List<LocationResult>> searchLocation(String query) async {
-  if (query.trim().isEmpty) return [];
+  final trimmed = query.trim();
+  if (trimmed.isEmpty) return [];
 
+  print('[SEARCH] Searching for "$trimmed"');
+
+  final url = Uri.parse(
+      'https://api.maptiler.com/geocoding/${Uri.encodeComponent(trimmed)}.json?key=$kMapTilerApiKey');
+
+  http.Response response;
   try {
-    final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(query)}&key=$kGoogleApiKey');
-    final response = await http.get(url);
-
-    if (response.statusCode != 200) {
-      print('Google Geocoding API error: ${response.statusCode} - ${response.body}');
-      return [];
-    }
-
-    final data = json.decode(response.body) as Map<String, dynamic>;
-    final results = data['results'] as List<dynamic>?;
-    if (results == null) return [];
-
-    return results.take(5).map((r) {
-      final result = r as Map<String, dynamic>;
-      final geometry = result['geometry'] as Map<String, dynamic>;
-      final location = geometry['location'] as Map<String, dynamic>;
-      return LocationResult(
-        name: result['formatted_address'] as String? ?? query,
-        latitude: (location['lat'] as num).toDouble(),
-        longitude: (location['lng'] as num).toDouble(),
-      );
-    }).toList();
+    response = await http.get(url);
   } catch (e) {
-    print('Error searching location "$query": $e');
-    return [];
+    print('[SEARCH] Network error: $e');
+    throw LocationSearchException(
+        'Could not reach the search service. Check your connection.');
   }
+
+  print('[SEARCH] HTTP ${response.statusCode}');
+
+  if (response.statusCode != 200) {
+    // MapTiler returns a plain-text error body (e.g. "Invalid key...") on
+    // failure rather than JSON, so surface it as-is when present.
+    final body = response.body.trim();
+    throw LocationSearchException(body.isNotEmpty
+        ? body
+        : 'Search failed (HTTP ${response.statusCode}).');
+  }
+
+  final Map<String, dynamic> data;
+  try {
+    data = json.decode(response.body) as Map<String, dynamic>;
+  } catch (e) {
+    print('[SEARCH] Could not parse response: $e');
+    throw const LocationSearchException('Search returned an invalid response.');
+  }
+
+  final features = data['features'] as List<dynamic>? ?? [];
+  final parsed = features.take(5).map((f) {
+    final feature = f as Map<String, dynamic>;
+    final geometry = feature['geometry'] as Map<String, dynamic>;
+    final coordinates = geometry['coordinates'] as List<dynamic>;
+    return LocationResult(
+      name: feature['place_name'] as String? ?? trimmed,
+      latitude: (coordinates[1] as num).toDouble(),
+      longitude: (coordinates[0] as num).toDouble(),
+    );
+  }).toList();
+
+  print('[SEARCH] ${parsed.length} result(s)');
+  return parsed;
 }

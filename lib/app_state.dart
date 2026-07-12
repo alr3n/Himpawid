@@ -253,13 +253,16 @@ class FFAppState extends ChangeNotifier {
     _nh3Value = value;
   }
 
-  String _aqiCategory = 'Unknown';
+  // Empty (not "Unknown") until the first successful fetch, so
+  // `.isNotEmpty` checks throughout the UI can actually distinguish
+  // "no data yet" from a real reading, instead of always being true.
+  String _aqiCategory = '';
   String get aqiCategory => _aqiCategory;
   set aqiCategory(String value) {
     _aqiCategory = value;
   }
 
-  String _healthRisk = 'Unknown';
+  String _healthRisk = '';
   String get healthRisk => _healthRisk;
   set healthRisk(String value) {
     _healthRisk = value;

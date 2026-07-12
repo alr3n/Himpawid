@@ -1,6 +1,6 @@
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_charts.dart';
-import '/flutter_flow/flutter_flow_google_map.dart';
+import '/flutter_flow/flutter_flow_map.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/pages/homepage/blogs/article_card1/article_card1_widget.dart';
@@ -60,24 +60,42 @@ class _HomePageWidgetState extends State<HomePageWidget>
   final animationsMap = <String, AnimationInfo>{};
 
   // ---------- Explore card preview state ----------
-  final Completer<GoogleMapController> _previewMapController = Completer();
+  final MapController _previewMapController = MapController();
   List<actions.CityAqi>? _topRankings;
+  String? _rankingError;
   List<Map<String, dynamic>> _previewFavourites = [];
   final Map<String, int> _favouriteAqi = {};
   actions.AqiHistoryResult? _weekHistory;
+  String? _historicalError;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => HomePageModel());
 
+    // Ranking (fixed world cities) and Favourites (the user's own saved
+    // coordinates) don't depend on the device's own location resolving,
+    // so they start immediately instead of queuing behind it.
+    _loadRankingPreview();
+    _loadFavouritesPreview();
+
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       await actions.getLocationAndAirQuality();
-      await actions.fetchAqiForecast(12);
       if (mounted) safeSetState(() {});
-      await _initializeFCM();
-      _loadExplorePreviews();
+
+      // Both need the now-resolved location; run them together instead
+      // of one after another.
+      await Future.wait([
+        actions.fetchAqiForecast(12),
+        _loadHistoricalPreview(),
+      ]);
+      if (mounted) safeSetState(() {});
+
+      // Push-notification setup is unrelated to dashboard data, and its
+      // browser permission prompt shouldn't gate anything else on this
+      // page if it's slow or never answered - fire and forget.
+      _initializeFCM();
     });
 
     // Start periodic notification generation every 3 minutes
@@ -161,34 +179,65 @@ class _HomePageWidgetState extends State<HomePageWidget>
     });
   }
 
-  /// Kicks off the data each Explore card preview needs, independently -
-  /// each populates and updates its own card as soon as it's ready rather
-  /// than all waiting on the slowest one.
-  void _loadExplorePreviews() {
-    // Favourites: read from the user's doc, then fetch AQI per saved spot.
+  /// Fetches the world-cities ranking preview. Independent of the user's
+  /// own location, so it can run immediately and be retried on its own.
+  Future<void> _loadRankingPreview() async {
+    if (mounted) setState(() => _rankingError = null);
+    try {
+      final result = await actions.fetchCityRankings();
+      if (mounted) setState(() => _topRankings = result);
+    } catch (e) {
+      print('[DASHBOARD] Ranking preview failed: $e');
+      if (mounted) {
+        setState(() => _rankingError = 'Couldn\'t load rankings.');
+      }
+    }
+  }
+
+  /// Loads the user's saved Favourites and fetches live AQI for each.
+  /// Independent of the device's own location - it only needs each
+  /// favourite's own stored coordinates.
+  void _loadFavouritesPreview() {
     final rawFavourites = currentUserDocument?.favouriteLocations ?? [];
     _previewFavourites = rawFavourites
         .whereType<Map>()
         .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
         .toList();
+    if (mounted) setState(() {});
+
     for (final fav in _previewFavourites) {
       final lat = (fav['latitude'] as num).toDouble();
       final lon = (fav['longitude'] as num).toDouble();
       actions.fetchAqiForCoordinates(lat, lon).then((aqi) {
-        if (mounted) setState(() => _favouriteAqi[fav['name'] as String] = aqi);
+        if (mounted) {
+          setState(() => _favouriteAqi[fav['name'] as String] = aqi);
+        }
       });
     }
-    if (mounted) setState(() {});
+  }
 
-    // Ranking: worst cities, worldwide.
-    actions.fetchCityRankings().then((result) {
-      if (mounted) setState(() => _topRankings = result);
-    });
-
-    // Historical: this week's trend.
-    actions.fetchAqiHistory(7).then((result) {
-      if (mounted) setState(() => _weekHistory = result);
-    });
+  /// Fetches this week's AQI trend for the device's current location.
+  /// Requires [FFAppState.latitude]/[longitude] to already be resolved
+  /// (called after `getLocationAndAirQuality()`) - if that never
+  /// resolved (permission denied, no signal), this reports a real error
+  /// instead of leaving the card on "Loading..." forever.
+  Future<void> _loadHistoricalPreview() async {
+    if (mounted) setState(() => _historicalError = null);
+    if (FFAppState().latitude == 0.0 && FFAppState().longitude == 0.0) {
+      if (mounted) {
+        setState(() =>
+            _historicalError = 'Your location isn\'t available yet.');
+      }
+      return;
+    }
+    final result = await actions.fetchAqiHistory(7);
+    if (!mounted) return;
+    if (result != null) {
+      setState(() => _weekHistory = result);
+    } else {
+      setState(() => _historicalError =
+          'Couldn\'t load the weekly trend for this location.');
+    }
   }
 
   Future<void> _initializeFCM() async {
@@ -472,46 +521,106 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
   }
 
-  Widget _previewPlaceholder(BuildContext context, String message) {
+  Widget _previewPlaceholder(BuildContext context, String message,
+      {bool loading = false}) {
     final theme = FlutterFlowTheme.of(context);
     return SizedBox(
       height: 40.0,
       child: Center(
-        child: Text(
-          message,
-          style: _manrope(context,
-              size: 11.5, weight: FontWeight.w600, color: theme.secondaryText),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loading) ...[
+              SizedBox(
+                width: 12.0,
+                height: 12.0,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  color: theme.secondaryText,
+                ),
+              ),
+              SizedBox(width: 8.0),
+            ],
+            Text(
+              message,
+              style: _manrope(context,
+                  size: 11.5,
+                  weight: FontWeight.w600,
+                  color: theme.secondaryText),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  Widget _previewError(BuildContext context, String message,
+      VoidCallback onRetry) {
+    final theme = FlutterFlowTheme.of(context);
+    return SizedBox(
+      height: 40.0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 14.0, color: theme.error),
+          SizedBox(width: 6.0),
+          Flexible(
+            child: Text(
+              message,
+              style: _manrope(context, size: 11.5, weight: FontWeight.w600,
+                  color: theme.secondaryText),
+            ),
+          ),
+          SizedBox(width: 8.0),
+          InkWell(
+            onTap: onRetry,
+            child: Text(
+              'Retry',
+              style: _manrope(context,
+                  size: 11.5, weight: FontWeight.w800, color: theme.lime),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const _locationFailureMessages = {
+    'Location services disabled',
+    'Location permission denied',
+    'Location permission permanently denied',
+    'Location request timed out',
+    'Error getting location',
+  };
+
   Widget _mapPreview(BuildContext context) {
     final hasLocation =
         FFAppState().latitude != 0.0 || FFAppState().longitude != 0.0;
     if (!hasLocation) {
-      return _previewPlaceholder(context, 'Locating you...');
+      if (_locationFailureMessages.contains(FFAppState().currentLocation)) {
+        return _previewError(context, FFAppState().currentLocation, () {
+          actions.getLocationAndAirQuality().then((_) {
+            if (mounted) safeSetState(() {});
+          });
+        });
+      }
+      return _previewPlaceholder(context, 'Locating you...', loading: true);
     }
     final here = LatLng(FFAppState().latitude, FFAppState().longitude);
     return ClipRRect(
       borderRadius: BorderRadius.circular(12.0),
       child: SizedBox(
         height: 110.0,
-        child: FlutterFlowGoogleMap(
+        child: FlutterFlowMap(
           controller: _previewMapController,
           initialLocation: here,
           markers: [FlutterFlowMarker('current', here)],
-          markerColor: GoogleMarkerColor.green,
-          mapType: MapType.normal,
-          style: GoogleMapStyle.airQuality,
+          markerColor: MapMarkerColor.green,
+          style: MapTileStyle.airQuality,
           initialZoom: 11.0,
           allowInteraction: false,
           allowZoom: false,
-          showZoomControls: false,
           showLocation: false,
-          showCompass: false,
-          showMapToolbar: false,
-          showTraffic: false,
         ),
       ),
     );
@@ -519,11 +628,19 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   Widget _rankingPreview(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
+    if (_rankingError != null) {
+      return _previewError(context, _rankingError!, () {
+        _loadRankingPreview();
+      });
+    }
     if (_topRankings == null) {
-      return _previewPlaceholder(context, 'Loading rankings...');
+      return _previewPlaceholder(context, 'Loading rankings...',
+          loading: true);
     }
     if (_topRankings!.isEmpty) {
-      return _previewPlaceholder(context, 'Rankings unavailable right now.');
+      return _previewError(context, 'Rankings unavailable right now.', () {
+        _loadRankingPreview();
+      });
     }
     return Column(
       children: _topRankings!.take(3).toList().asMap().entries.map((entry) {
@@ -607,8 +724,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   Widget _historicalPreview(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
+    if (_historicalError != null) {
+      return _previewError(context, _historicalError!, () {
+        _loadHistoricalPreview();
+      });
+    }
     if (_weekHistory == null) {
-      return _previewPlaceholder(context, 'Loading trend...');
+      return _previewPlaceholder(context, 'Loading trend...', loading: true);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

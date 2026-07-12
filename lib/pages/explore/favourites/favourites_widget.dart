@@ -29,7 +29,9 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
   List<Map<String, dynamic>> _favourites = [];
   final Map<String, int> _aqiByLocation = {};
   List<actions.LocationResult>? _searchResults;
+  final Map<String, int> _searchResultAqi = {};
   bool _searching = false;
+  String? _searchError;
 
   @override
   void initState() {
@@ -63,13 +65,40 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
   Future<void> _search() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
-    setState(() => _searching = true);
-    final results = await actions.searchLocation(query);
-    if (mounted) {
-      setState(() {
-        _searching = false;
-        _searchResults = results;
-      });
+    setState(() {
+      _searching = true;
+      _searchError = null;
+      _searchResultAqi.clear();
+    });
+    try {
+      // Geocode the address to coordinates via Google's Geocoding API,
+      // then immediately fetch AQI (OpenWeather) for every candidate so
+      // the user sees air quality right in the results, before deciding
+      // whether to save any of them as a Favourite.
+      final results = await actions.searchLocation(query);
+      if (mounted) {
+        setState(() {
+          _searching = false;
+          _searchResults = results;
+        });
+      }
+      for (final result in results) {
+        actions
+            .fetchAqiForCoordinates(result.latitude, result.longitude)
+            .then((aqi) {
+          if (mounted) {
+            setState(() => _searchResultAqi[result.name] = aqi);
+          }
+        });
+      }
+    } on actions.LocationSearchException catch (e) {
+      if (mounted) {
+        setState(() {
+          _searching = false;
+          _searchResults = null;
+          _searchError = e.message;
+        });
+      }
     }
   }
 
@@ -83,16 +112,28 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
     await currentUserReference!.update({
       'favourite_locations': FieldValue.arrayUnion([entry]),
     });
+
+    // Reuse the AQI already fetched for the search result instead of
+    // requesting it again.
+    final existingAqi = _searchResultAqi[result.name];
+
     setState(() {
       _favourites.add(entry);
       _searchResults = null;
+      _searchResultAqi.clear();
       _searchController.clear();
+      if (existingAqi != null) {
+        _aqiByLocation[result.name] = existingAqi;
+      }
     });
     FocusScope.of(context).unfocus();
-    final aqi = await actions.fetchAqiForCoordinates(
-        result.latitude, result.longitude);
-    if (mounted) {
-      setState(() => _aqiByLocation[result.name] = aqi);
+
+    if (existingAqi == null) {
+      final aqi = await actions.fetchAqiForCoordinates(
+          result.latitude, result.longitude);
+      if (mounted) {
+        setState(() => _aqiByLocation[result.name] = aqi);
+      }
     }
   }
 
@@ -249,6 +290,52 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
                     ),
                   ),
 
+                  if (_searchError != null) ...[
+                    SizedBox(height: 10.0),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: theme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20.0),
+                        border: Border.all(
+                            color: theme.error.withOpacity(0.4), width: 1.0),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.error_outline_rounded,
+                              color: theme.error, size: 18.0),
+                          SizedBox(width: 10.0),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Search failed',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.error,
+                                  ),
+                                ),
+                                SizedBox(height: 2.0),
+                                Text(
+                                  _searchError!,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   if (_searchResults != null) ...[
                     SizedBox(height: 10.0),
                     Container(
@@ -261,7 +348,8 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
                           ? Padding(
                               padding: EdgeInsets.all(16.0),
                               child: Text(
-                                'No matching places found.',
+                                'No matching places found. Try a different '
+                                'search term.',
                                 style: GoogleFonts.manrope(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
@@ -271,7 +359,12 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
                             )
                           : Column(
                               children: _searchResults!
-                                  .map((r) => InkWell(
+                                  .map((r) {
+                                    final aqi = _searchResultAqi[r.name];
+                                    final color = (aqi != null && aqi > 0)
+                                        ? epaColor(aqi)
+                                        : theme.secondaryText;
+                                    return InkWell(
                                         onTap: () => _addFavourite(r),
                                         child: Padding(
                                           padding: EdgeInsets.all(14.0),
@@ -291,10 +384,38 @@ class _FavouritesWidgetState extends State<FavouritesWidget> {
                                                   ),
                                                 ),
                                               ),
+                                              SizedBox(width: 8.0),
+                                              Container(
+                                                padding: EdgeInsets
+                                                    .symmetric(
+                                                        horizontal: 8.0,
+                                                        vertical: 4.0),
+                                                decoration: BoxDecoration(
+                                                  color: color
+                                                      .withOpacity(0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8.0),
+                                                ),
+                                                child: Text(
+                                                  aqi == null
+                                                      ? '...'
+                                                      : (aqi > 0
+                                                          ? '$aqi · ${epaCategory(aqi)}'
+                                                          : '--'),
+                                                  style: GoogleFonts.manrope(
+                                                    fontSize: 11.0,
+                                                    fontWeight:
+                                                        FontWeight.w800,
+                                                    color: color,
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
-                                      ))
+                                      );
+                                  })
                                   .toList(),
                             ),
                     ),

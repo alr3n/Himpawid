@@ -56,11 +56,6 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
     <string>In order to search nearby, this app requires access to your current location.</string>
 
-	<key>MAPS_API_KEY</key>
-	<string>$(MAPS_API_KEY)</string>
-
-
-
 
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
