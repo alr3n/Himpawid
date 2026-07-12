@@ -45,6 +45,12 @@ class UsersRecord extends FirestoreRecord {
   String get phoneNumber => _phoneNumber ?? '';
   bool hasPhoneNumber() => _phoneNumber != null;
 
+  // "favourite_locations" field. Each entry is a map of
+  // {name, latitude, longitude} for a saved/followed location.
+  List<dynamic> _favouriteLocations = const [];
+  List<dynamic> get favouriteLocations => _favouriteLocations;
+  bool hasFavouriteLocations() => _favouriteLocations.isNotEmpty;
+
   void _initializeFields() {
     _email = snapshotData['email'] as String?;
     _displayName = snapshotData['display_name'] as String?;
@@ -52,6 +58,8 @@ class UsersRecord extends FirestoreRecord {
     _uid = snapshotData['uid'] as String?;
     _createdTime = snapshotData['created_time'] as DateTime?;
     _phoneNumber = snapshotData['phone_number'] as String?;
+    _favouriteLocations =
+        (snapshotData['favourite_locations'] as List?) ?? const [];
   }
 
   static CollectionReference get collection =>

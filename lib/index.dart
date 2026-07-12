@@ -22,3 +22,11 @@ export '/terms_of_service/terms_of_service_widget.dart'
 export '/pages/profile/developer_info/developer_info_widget.dart'
     show DeveloperInfoWidget;
 export '/chat_bot/chat_bot_widget.dart' show ChatBotWidget;
+export '/pages/explore/explore_widget.dart' show ExploreWidget;
+export '/pages/explore/ranking/ranking_widget.dart' show RankingWidget;
+export '/pages/explore/favourites/favourites_widget.dart'
+    show FavouritesWidget;
+export '/pages/explore/historical/historical_widget.dart'
+    show HistoricalWidget;
+export '/pages/explore/health_advice/health_advice_widget.dart'
+    show HealthAdviceWidget;

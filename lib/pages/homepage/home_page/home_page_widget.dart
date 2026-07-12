@@ -694,6 +694,72 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         ),
                       ),
 
+                      SizedBox(height: 16.0),
+
+                      // ---------- Explore ----------
+                      InkWell(
+                        splashColor: Colors.transparent,
+                        focusColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        onTap: () async {
+                          context.pushNamed(ExploreWidget.routeName);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(18.0),
+                          decoration: BoxDecoration(
+                            color: theme.lime,
+                            borderRadius: BorderRadius.circular(24.0),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44.0,
+                                height: 44.0,
+                                decoration: BoxDecoration(
+                                  color: theme.raisinBlack.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.explore_rounded,
+                                  color: theme.raisinBlack,
+                                  size: 22.0,
+                                ),
+                              ),
+                              SizedBox(width: 14.0),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Explore more features',
+                                      style: _manrope(context,
+                                          size: 15.0,
+                                          weight: FontWeight.w800,
+                                          color: theme.raisinBlack),
+                                    ),
+                                    Text(
+                                      'Rankings, favourites, history & health tips',
+                                      style: _manrope(context,
+                                          size: 11.5,
+                                          weight: FontWeight.w600,
+                                          color: theme.raisinBlack
+                                              .withOpacity(0.65)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: theme.raisinBlack,
+                                size: 20.0,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
                       SizedBox(height: 28.0),
 
                       // ---------- Blog ----------

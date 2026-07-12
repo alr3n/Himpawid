@@ -168,7 +168,32 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: ChatBotWidget.routeName,
           path: ChatBotWidget.routePath,
           builder: (context, params) => ChatBotWidget(),
-        )
+        ),
+        FFRoute(
+          name: ExploreWidget.routeName,
+          path: ExploreWidget.routePath,
+          builder: (context, params) => ExploreWidget(),
+        ),
+        FFRoute(
+          name: RankingWidget.routeName,
+          path: RankingWidget.routePath,
+          builder: (context, params) => RankingWidget(),
+        ),
+        FFRoute(
+          name: FavouritesWidget.routeName,
+          path: FavouritesWidget.routePath,
+          builder: (context, params) => FavouritesWidget(),
+        ),
+        FFRoute(
+          name: HistoricalWidget.routeName,
+          path: HistoricalWidget.routePath,
+          builder: (context, params) => HistoricalWidget(),
+        ),
+        FFRoute(
+          name: HealthAdviceWidget.routeName,
+          path: HealthAdviceWidget.routePath,
+          builder: (context, params) => HealthAdviceWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

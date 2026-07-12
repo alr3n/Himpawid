@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'generate_notification.dart';
 
@@ -274,4 +273,35 @@ Color epaColor(int aqi) {
   if (aqi <= 200) return const Color(0xFFFF0000); // Unhealthy
   if (aqi <= 300) return const Color(0xFF8F3F97); // Very Unhealthy
   return const Color(0xFF7E0023); // Hazardous
+}
+
+/// Fetches the current EPA AQI (0-500, higher = worse) for an arbitrary
+/// [latitude]/[longitude] from OpenWeather, without touching [FFAppState].
+/// Shared by any feature that needs an AQI lookup for a location other than
+/// "wherever the device currently is" (ranking, favourites, etc.) - returns
+/// 0 on failure.
+Future<int> fetchAqiForCoordinates(double latitude, double longitude) async {
+  try {
+    final url = Uri.parse(
+        'https://api.openweathermap.org/data/2.5/air_pollution?lat=$latitude&lon=$longitude&appid=$kOpenWeatherApiKey');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final entries = data['list'] as List<dynamic>?;
+      if (entries != null && entries.isNotEmpty) {
+        final components = (entries.first as Map<String, dynamic>)['components']
+                as Map<String, dynamic>? ??
+            {};
+        final pm25 = (components['pm2_5'] as num?)?.toDouble() ?? 0.0;
+        return epaAqiFromPm25(pm25);
+      }
+    } else {
+      print(
+          'OpenWeather Air Pollution API error: ${response.statusCode} - ${response.body}');
+    }
+  } catch (e) {
+    print('Error fetching AQI for ($latitude, $longitude): $e');
+  }
+  return 0;
 }
