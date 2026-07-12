@@ -50,61 +50,48 @@ Himpawid is a cross-platform (Android, iOS, Web) Flutter application that:
 
 ## Features
 
-### 🔐 Authentication
+### Authentication
 - Email/password sign-in and sign-up, Google Sign-In, and Sign in with Apple (Apple is hidden on Android).
 - Firebase Auth session persists across app restarts.
 - `/profile` and `/editProfile` are route-guarded — a signed-out user (or a stale deep link) is redirected straight to `/login`.
 - Logging out clears both the Firebase session and the native Google session, resets cached profile data immediately, and replaces the navigation stack so the back button can't return to authenticated pages.
 
-### 🏠 Dashboard (Home)
+### Dashboard (Home)
 - Live "current location" card with real-time AQI, EPA category (Good → Hazardous), and dominant pollutant.
 - Per-pollutant breakdown grid: PM2.5, PM10, O₃, NO₂, SO₂, CO, NO, NH₃.
 - AQI trend chart (`fl_chart`, past 7 days) on the dashboard, plus a dedicated full-screen forecast view offering 12h/24h/48h forward-looking ranges.
 - Live preview cards for World Ranking, Favourites, Historical Insights, and Health Advice, each with its own loading/error/retry state.
 - Educational blog articles (e.g. "What the AQI Colors Really Mean", mask/filtration guidance).
 
-### 🗺️ Live AQI Map
+### Live AQI Map
 - Full-screen map built on `flutter_map` with MapTiler raster tiles (dark `dataviz-dark` style).
 - The AQI color wash is a **real, custom `TileProvider`** — each visible `(x, y, z)` tile is rendered on demand from live sampled AQI data, so the heatmap covers the entire viewport and new tiles load automatically as you pan or zoom, exactly like a professional pollution map.
 - Adjacent tiles blend seamlessly because they draw from one shared, growing cache of real AQI samples (inverse-distance-weighted interpolation) rather than isolated per-tile data; already-sampled areas are never re-fetched, and concurrent API calls are throttled.
 - A bottom summary card with an animated AQI gauge tracks whatever location the map is currently centered on in real time — not just the device's own location.
 
-### 🌍 Explore Hub
+###  Explore Hub
 - **World Ranking** — live AQI for a curated list of major world cities, sorted worst-first.
 - **Favourites** — search any place by name (MapTiler geocoding), see its live AQI before saving, and manage a personal saved-locations list stored in Firestore.
 - **Historical Insights** — daily-average AQI trend over the last 7 or 30 days, computed from OpenWeather's historical air pollution data, with average/min/max stats.
 - **Health Advice** — condition-specific guidance (Asthma, Heart Issues, Allergies, Sinus, Cold/Flu, Chronic/COPD) with an educational-guidance disclaimer.
 
-### 💬 Himpawid Assistant (Chatbot)
+### Himpawid Assistant (Chatbot)
 - A **rule-based** assistant (keyword matching, not an LLM) that answers questions about current AQI, individual pollutants, and safety recommendations (exercise, masks, opening windows), using the real EPA AQI scale and live data.
 - Understands "in `<place>`" phrasing (e.g. *"what's the AQI in Manila?"*) and geocodes that place to answer with its real, live AQI instead of always answering for the device's own location.
 - An unused `CHATBOT_API_KEY` exists in `.env` — see [Known Limitations](#known-limitations).
 
-### 🔔 Notifications
+### Notifications
 - Every successful AQI fetch writes a Firestore `notifications` document, which a Cloud Function (`sendNotification`) picks up and pushes via FCM to registered device tokens.
 - In-app notification feed reads the same Firestore collection live.
 - Per-user notification preferences (push/email toggles) persisted to the user's Firestore document.
 
-### 👤 Profile & Settings
+###  Profile & Settings
 - Profile page reflects the actual authenticated user in real time (display name, email, avatar) — see [Application Workflow](#application-workflow).
 - Edit profile (display name, phone number; email is read-only, sourced from the auth provider).
 - Language selection (English, Filipino, Cebuano fully wired; a larger ~40-locale picker exists in the UI but only these three are functional today — others show a "coming soon" message).
 - Support (mailto), Terms of Service, Developer Info, and Invite Friends (copy-link) screens.
 
-## Screenshots
 
-<!--
-Add screenshots here once available, e.g.:
-| Dashboard | Live AQI Map | Explore Hub |
-|---|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Map](docs/screenshots/map.png) | ![Explore](docs/screenshots/explore.png) |
-
-| Chatbot | Profile | Historical Insights |
-|---|---|---|
-| ![Chatbot](docs/screenshots/chatbot.png) | ![Profile](docs/screenshots/profile.png) | ![Historical](docs/screenshots/historical.png) |
--->
-
-_Screenshots pending — add images under `docs/screenshots/` and link them here._
 
 ## Tech Stack
 
