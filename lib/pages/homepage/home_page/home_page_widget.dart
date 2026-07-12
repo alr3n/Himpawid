@@ -22,6 +22,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
+class _DashboardFeature {
+  const _DashboardFeature({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final void Function(BuildContext context) onTap;
+}
+
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
 
@@ -295,6 +309,102 @@ class _HomePageWidgetState extends State<HomePageWidget>
           'Fetching today\'s air quality guidance...'
         );
     }
+  }
+
+  late final List<_DashboardFeature> _dashboardFeatures = [
+    _DashboardFeature(
+      icon: Icons.map_rounded,
+      title: 'View Your Area\'s Air Quality Conditions on Map',
+      description: 'Check air quality condition in your area with '
+          'interactive maps for better understanding.',
+      onTap: (context) => context.pushNamed(HeatmapWidget.routeName),
+    ),
+    _DashboardFeature(
+      icon: Icons.leaderboard_rounded,
+      title: 'Explore World\'s Most Polluted Cities',
+      description: 'Live ranking of most polluted cities in the world to '
+          'know your city\'s rank.',
+      onTap: (context) => context.pushNamed(RankingWidget.routeName),
+    ),
+    _DashboardFeature(
+      icon: Icons.favorite_rounded,
+      title: 'Check Air Quality for Your Favourite Spot',
+      description: 'Follow your favourite locations for timely updates, '
+          'insights and informed decision.',
+      onTap: (context) => context.pushNamed(FavouritesWidget.routeName),
+    ),
+    _DashboardFeature(
+      icon: Icons.insights_rounded,
+      title: 'Historical Insights of Your Air Quality',
+      description: 'See what you have breathed with historical data '
+          'patterns as monthly and weekly air quality data monitoring.',
+      onTap: (context) => context.pushNamed(HistoricalWidget.routeName),
+    ),
+    _DashboardFeature(
+      icon: Icons.health_and_safety_rounded,
+      title: 'Get Health Advice for Air Quality in Your Area',
+      description: 'Follow these advices to protect yourself from air '
+          'pollution exposure and stay healthy.',
+      onTap: (context) => context.pushNamed(HealthAdviceWidget.routeName),
+    ),
+  ];
+
+  Widget _featureCard(BuildContext context, _DashboardFeature feature) {
+    final theme = FlutterFlowTheme.of(context);
+    return InkWell(
+      splashColor: Colors.transparent,
+      focusColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      onTap: () => feature.onTap(context),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(18.0),
+        decoration: BoxDecoration(
+          color: theme.secondaryBackground,
+          borderRadius: BorderRadius.circular(24.0),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48.0,
+              height: 48.0,
+              decoration: BoxDecoration(
+                color: theme.lime,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(feature.icon, color: theme.raisinBlack, size: 24.0),
+            ),
+            SizedBox(width: 14.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    feature.title,
+                    style: _manrope(context,
+                        size: 15.0, weight: FontWeight.w800, height: 1.25),
+                  ),
+                  SizedBox(height: 6.0),
+                  Text(
+                    feature.description,
+                    style: _manrope(context,
+                        size: 12.0,
+                        weight: FontWeight.w500,
+                        color: theme.secondaryText,
+                        height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 6.0),
+            Icon(Icons.chevron_right_rounded,
+                color: theme.secondaryText, size: 22.0),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _pollutantTile(
@@ -696,71 +806,22 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
                       SizedBox(height: 16.0),
 
-                      // ---------- Explore ----------
-                      InkWell(
-                        splashColor: Colors.transparent,
-                        focusColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        onTap: () async {
-                          context.pushNamed(ExploreWidget.routeName);
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(18.0),
-                          decoration: BoxDecoration(
-                            color: theme.lime,
-                            borderRadius: BorderRadius.circular(24.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44.0,
-                                height: 44.0,
-                                decoration: BoxDecoration(
-                                  color: theme.raisinBlack.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.explore_rounded,
-                                  color: theme.raisinBlack,
-                                  size: 22.0,
-                                ),
-                              ),
-                              SizedBox(width: 14.0),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Explore more features',
-                                      style: _manrope(context,
-                                          size: 15.0,
-                                          weight: FontWeight.w800,
-                                          color: theme.raisinBlack),
-                                    ),
-                                    Text(
-                                      'Rankings, favourites, history & health tips',
-                                      style: _manrope(context,
-                                          size: 11.5,
-                                          weight: FontWeight.w600,
-                                          color: theme.raisinBlack
-                                              .withOpacity(0.65)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                color: theme.raisinBlack,
-                                size: 20.0,
-                              ),
-                            ],
-                          ),
-                        ),
+                      // ---------- Explore features ----------
+                      Text(
+                        'Explore',
+                        style: _manrope(context,
+                            size: 22.0, weight: FontWeight.w800),
                       ),
+                      SizedBox(height: 14.0),
+                      ..._dashboardFeatures.asMap().entries.map(
+                            (entry) => Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  0.0, 0.0, 0.0, 12.0),
+                              child: _featureCard(context, entry.value),
+                            ),
+                          ),
 
-                      SizedBox(height: 28.0),
+                      SizedBox(height: 16.0),
 
                       // ---------- Blog ----------
                       Row(
